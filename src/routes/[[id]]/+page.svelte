@@ -336,54 +336,55 @@
 			</div>
 		{/if}
 	</div>
-
-	<main class="container max-w-3xl mx-auto h-screen flex flex-col">
-		{#if !$messages.length}
-			<div class="h-full flex items-center justify-center">
-				<div>
-					<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
-					<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
+	<div class="w-full overflow-y-auto">
+		<main class="container max-w-3xl mx-auto h-screen flex flex-col">
+			{#if !$messages.length}
+				<div class="h-full flex items-center justify-center">
+					<div>
+						<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
+						<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
+					</div>
 				</div>
-			</div>
-		{:else}
-			<div bind:this={container} class="flex-1 overflow-y-auto p-4">
-				<div class="space-y-4">
-					{#each $messages as message}
-						{#if message.role === 'user'}
-							<Message
-								{message}
-								name={'You'}
-								imageUrl={$user ? $user.profilePicture : './assets/default-profile-picture.webp'}
-							/>
-						{:else}
-							<Message {message} name={'AI'} imageUrl={'./assets/ai-profile-picture.webp'} />
-						{/if}
-					{/each}
+			{:else}
+				<div bind:this={container} class="flex-1 p-4">
+					<div class="space-y-4">
+						{#each $messages as message}
+							{#if message.role === 'user'}
+								<Message
+									{message}
+									name={'You'}
+									imageUrl={$user ? $user.profilePicture : './assets/default-profile-picture.webp'}
+								/>
+							{:else}
+								<Message {message} name={'AI'} imageUrl={'./assets/ai-profile-picture.webp'} />
+							{/if}
+						{/each}
+					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
 
-		<form on:submit={handleSubmit} class="pt-4 px-4 flex">
-			<div class="p-2 flex w-full">
-				<textarea
-					bind:value={$input}
-					bind:this={textarea}
-					on:input={autoGrow}
-					on:keydown={handleKeyDown}
-					rows="1"
-					placeholder="Message AI..."
-					class="focus:border-zinc-600 border border-r-0 input rounded-r-none flex-grow outline-none bg-zinc-800 ring-0 focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
-				/>
-				<button
-					type="submit"
-					class="button bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 text-sm px-4 rounded-r-lg"
-				>
-					Send
-				</button>
-			</div>
-		</form>
-		<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
-			This is an unofficial open source UI for the OpenAI API.
-		</p>
-	</main>
+			<form on:submit={handleSubmit} class="pt-4 px-4 flex">
+				<div class="p-2 flex w-full">
+					<textarea
+						bind:value={$input}
+						bind:this={textarea}
+						on:input={autoGrow}
+						on:keydown={handleKeyDown}
+						rows="1"
+						placeholder="Message AI..."
+						class="focus:border-zinc-600 border border-r-0 input rounded-r-none flex-grow outline-none bg-zinc-800 ring-0 focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
+					/>
+					<button
+						type="submit"
+						class="button bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 text-sm px-4 rounded-r-lg"
+					>
+						Send
+					</button>
+				</div>
+			</form>
+			<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
+				This is an unofficial open source UI for the OpenAI API.
+			</p>
+		</main>
+	</div>
 </div>
