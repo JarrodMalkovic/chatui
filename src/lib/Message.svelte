@@ -5,7 +5,7 @@
 </script>
 
 <div class="flex space-x-2">
-	<img class="h-6 w-6 rounded-2xl" src={imageUrl} />
+	<img class="h-10 w-10 rounded-full" src={imageUrl} />
 	<div>
 		<div class="text-white font-bold text-sm">{name}</div>
 		<div class="text-white text-sm">

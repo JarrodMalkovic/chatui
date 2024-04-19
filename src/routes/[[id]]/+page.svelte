@@ -11,7 +11,6 @@
 	import GoKebabHorizontal from 'svelte-icons/go/GoKebabHorizontal.svelte';
 
 	let conversations = writable<any[]>([]);
-
 	const {
 		input,
 		handleSubmit: makeAiRequest,
@@ -342,11 +341,7 @@
 		{#if !$messages.length}
 			<div class="h-full flex items-center justify-center">
 				<div>
-					<img
-						class="mx-auto h-10 w-auto"
-						src="https://tailwindui.com/img/logos/mark.svg?color=purple&shade=600"
-						alt="Your Company"
-					/>
+					<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
 					<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
 				</div>
 			</div>
@@ -358,16 +353,10 @@
 							<Message
 								{message}
 								name={'You'}
-								imageUrl={$user
-									? $user.profilePicture
-									: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR11hjvD3y1L-qHpL6tzE3YbTB6ck-bJ3uVEvgGG52QOg&s'}
+								imageUrl={$user ? $user.profilePicture : './assets/default-profile-picture.webp'}
 							/>
 						{:else}
-							<Message
-								{message}
-								name={'ChatGPT'}
-								imageUrl={'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdpTAHu5zTBr7RhniLiONQZHc-9rsLASmjyh2LMlSzsg&s'}
-							/>
+							<Message {message} name={'AI'} imageUrl={'./assets/ai-profile-picture.webp'} />
 						{/if}
 					{/each}
 				</div>
@@ -382,7 +371,7 @@
 					on:input={autoGrow}
 					on:keydown={handleKeyDown}
 					rows="1"
-					placeholder="Message ChatGPT"
+					placeholder="Message AI..."
 					class="focus:border-zinc-600 border border-r-0 input rounded-r-none flex-grow outline-none bg-zinc-800 ring-0 focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
 				/>
 				<button

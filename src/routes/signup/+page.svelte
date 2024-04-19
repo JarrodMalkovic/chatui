@@ -49,11 +49,7 @@
 
 <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 bg-zinc-900 text-white">
 	<div class="sm:mx-auto sm:w-full sm:max-w-md">
-		<img
-			class="mx-auto h-10 w-auto"
-			src="https://tailwindui.com/img/logos/mark.svg?color=purple&shade=600"
-			alt="Your Company"
-		/>
+		<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
 		<h2 class="mt-2 text-center text-2xl font-bold leading-9 tracking-tight">
 			Sign up for an account
 		</h2>
