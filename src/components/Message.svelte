@@ -31,9 +31,30 @@
 	};
 
 	// Code blocks with syntax highlighting
+	window.copyToClipboard = function (encodedCode, buttonId) {
+		const decodedCode = decodeURIComponent(escape(atob(encodedCode))); // Decode the Base64 string
+		const button = document.getElementById(buttonId);
+		navigator.clipboard.writeText(decodedCode).then(() => {
+			if (button) {
+				button.innerText = 'Copied!'; // Change button text to "Copied"
+				setTimeout(() => {
+					button.innerText = 'Copy code'; // Revert button text after 1 second
+				}, 2000);
+			}
+		});
+	};
 	renderer.code = (code, language) => {
 		const validLanguage = hljs.getLanguage(language) ? language : 'plaintext';
-		return `<pre class="rounded-2xl"><code class="hljs ${validLanguage} rounded-2xl">${hljs.highlight(code, { language: validLanguage, ignoreIllegals: true }).value}</code></pre>`;
+		const encodedCode = btoa(unescape(encodeURIComponent(code)));
+		const buttonId = `copy-btn-${Math.random()}`;
+
+		return `<div class="relative group max-w-2xl">
+					<div class="bg-zinc-700 rounded-t-xl p-1 flex justify-between">
+						<div class="px-2 py-1 text-white text-xs">${validLanguage}</div>
+						<button id="${buttonId}" class='px-2 py-1 text-white text-xs' onclick='copyToClipboard("${encodedCode}", "${buttonId}")'}>Copy code</button>
+					</div>
+                    <pre class="rounded-xl rounded-t-none overflow-x-auto border border-t-0 border-gray-500 max-w-2xl"><code class="hljs ${validLanguage} block p-4">${hljs.highlight(code, { language: validLanguage, ignoreIllegals: true }).value}</code></pre>
+                </div>`;
 	};
 
 	// Lists

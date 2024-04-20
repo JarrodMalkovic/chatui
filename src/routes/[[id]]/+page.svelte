@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { useChat } from 'ai/svelte';
-	import Message from '$lib/Message.svelte';
+	import Message from '../../components/Message.svelte';
 	import { user } from '$lib/auth';
 	import { supabase } from '$lib/supabaseClient';
 	import { onMount, tick } from 'svelte';
@@ -55,7 +55,6 @@
 		let message = $input;
 		makeAiRequest(e);
 
-		console.log(conversationId, $user);
 		if (conversationId == null && $user) {
 			conversationId = await createConversation();
 			goto(`/${conversationId}`);
