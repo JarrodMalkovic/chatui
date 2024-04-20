@@ -20,7 +20,7 @@
 		setMessages
 	} = useChat({
 		onFinish: async (message) => {
-			createMessage(message.content, parseInt($page.params.id), 'assistant');
+			createMessage(message.content, $page.params.id, 'assistant');
 
 			if ($messages.length == 2) {
 				const response = await fetch('/api/generate-title', {
@@ -34,7 +34,7 @@
 
 				conversations.update((currentConversations) => {
 					return currentConversations.map((currentConversation) =>
-						currentConversation.id === parseInt($page.params.id)
+						currentConversation.id === $page.params.id
 							? { ...currentConversation, title: titleResponse.title }
 							: currentConversation
 					);
@@ -43,7 +43,7 @@
 				await supabase
 					.from('conversations')
 					.update({ title: titleResponse.title })
-					.eq('id', parseInt($page.params.id));
+					.eq('id', $page.params.id);
 			}
 		}
 	});
@@ -53,11 +53,13 @@
 			return;
 		}
 
-		let conversationId = $page.params.id == null ? null : parseInt($page.params.id);
+		let conversationId = $page.params.id == null ? null : $page.params.id;
+		console.log(conversationId);
 		let message = $input;
 		makeAiRequest(e);
 
 		if (conversationId == null && $user) {
+			console.log('create convo');
 			conversationId = await createConversation();
 			goto(`/${conversationId}`);
 		}
@@ -89,6 +91,7 @@
 			.insert({ user_id: $user.id })
 			.select('*');
 
+		console.log({ data });
 		if (data && data.length > 0) {
 			conversations.update((currentConversations) => {
 				return [data[0], ...currentConversations];
@@ -102,7 +105,7 @@
 		}
 	}
 
-	async function fetchMessages(conversationId: number) {
+	async function fetchMessages(conversationId: string) {
 		const { data, error } = await supabase
 			.from('messages')
 			.select('*')
@@ -122,7 +125,7 @@
 		}
 	}
 
-	async function createMessage(message: string, conversationId: number, role: string) {
+	async function createMessage(message: string, conversationId: string, role: string) {
 		if (!$user) {
 			return;
 		}
@@ -133,7 +136,7 @@
 			.select('*');
 	}
 
-	async function deleteConversation(conversationId: number) {
+	async function deleteConversation(conversationId: string) {
 		if (!$user) {
 			return;
 		}
@@ -235,14 +238,13 @@
 		autoGrow();
 
 		if ($page.params.id) {
-			fetchMessages(parseInt($page.params.id));
+			fetchMessages($page.params.id);
 		}
 
 		scrollToBottom(true);
 	});
 
-	$: $page.params.id,
-		$page.params.id == null ? setMessages([]) : fetchMessages(parseInt($page.params.id));
+	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
 	$: $user, fetchConversations();
 	$: $messages, scrollToBottom();
 </script>
