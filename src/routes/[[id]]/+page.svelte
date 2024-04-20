@@ -9,6 +9,8 @@
 	import { page } from '$app/stores';
 	import MdCreate from 'svelte-icons/md/MdCreate.svelte';
 	import GoKebabHorizontal from 'svelte-icons/go/GoKebabHorizontal.svelte';
+	import FaArrowDown from 'svelte-icons/fa/FaArrowDown.svelte';
+	import { fly } from 'svelte/transition';
 
 	let conversations = writable<any[]>([]);
 	const {
@@ -148,18 +150,27 @@
 	}
 
 	let container: HTMLElement;
-	async function scrollToBottom(force = false) {
-		await tick();
-
+	async function scrollToBottom(force = true) {
 		if (!container) return;
 
-		// Check if the user is near the bottom of the container
 		const isScrolledToBottom =
-			container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+			container.scrollHeight - container.offsetHeight <= container.clientHeight + 100;
 
 		if (isScrolledToBottom || force) {
 			container.scrollTop = container.scrollHeight - container.clientHeight;
 		}
+	}
+
+	let showScrollButton = false;
+	function handleScroll() {
+		const threshold = 100; // Threshold for when to show the button
+		showScrollButton =
+			container.scrollTop < container.scrollHeight - container.clientHeight - threshold;
+	}
+
+	function onScrollToBottomButtonClick() {
+		container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+		showScrollButton = false;
 	}
 
 	async function logOut() {
@@ -219,6 +230,7 @@
 	}
 
 	onMount(async () => {
+		container.addEventListener('scroll', handleScroll);
 		fetchConversations();
 		autoGrow();
 
@@ -335,7 +347,7 @@
 			</div>
 		{/if}
 	</div>
-	<div class="w-full overflow-y-auto">
+	<div bind:this={container} class="w-full overflow-y-scroll">
 		<main class="container max-w-3xl mx-auto h-screen flex flex-col">
 			{#if !$messages.length}
 				<div class="h-full flex items-center justify-center">
@@ -345,7 +357,7 @@
 					</div>
 				</div>
 			{:else}
-				<div bind:this={container} class="flex-1 p-4">
+				<div class="flex-1 p-4">
 					<div class="space-y-4">
 						{#each $messages as message}
 							{#if message.role === 'user'}
@@ -362,28 +374,43 @@
 				</div>
 			{/if}
 
-			<form on:submit={handleSubmit} class="pt-4 px-4 flex">
-				<div class="p-2 flex w-full">
-					<textarea
-						bind:value={$input}
-						bind:this={textarea}
-						on:input={autoGrow}
-						on:keydown={handleKeyDown}
-						rows="1"
-						placeholder="Message AI..."
-						class="focus:border-zinc-600 border border-r-0 input rounded-r-none flex-grow outline-none bg-zinc-800 ring-0 focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
-					/>
-					<button
-						type="submit"
-						class="button bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 text-sm px-4 rounded-r-lg"
-					>
-						Send
-					</button>
+			<div class="sticky bottom-0">
+				{#if showScrollButton}
+					<div class="flex justify-center">
+						<button
+							on:click={onScrollToBottomButtonClick}
+							class="p-2 mb-2 w-8 h-8 rounded-full bg-zinc-700 hover:bg-zinc-800 border-1 border-zinc-400 text-white"
+							in:fly={{ y: 30, duration: 300 }}
+						>
+							<FaArrowDown />
+						</button>
+					</div>
+				{/if}
+				<div class="bg-zinc-900">
+					<form on:submit={handleSubmit} class="px-4 flex">
+						<div class="p-2 flex w-full">
+							<textarea
+								bind:value={$input}
+								bind:this={textarea}
+								on:input={autoGrow}
+								on:keydown={handleKeyDown}
+								rows="1"
+								placeholder="Message AI..."
+								class="focus:border-zinc-600 border border-r-0 input rounded-r-none flex-grow outline-none bg-zinc-800 ring-0 focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
+							/>
+							<button
+								type="submit"
+								class="button bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 text-sm px-4 rounded-r-lg"
+							>
+								Send
+							</button>
+						</div>
+					</form>
+					<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
+						This is an unofficial open source UI for the OpenAI API.
+					</p>
 				</div>
-			</form>
-			<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
-				This is an unofficial open source UI for the OpenAI API.
-			</p>
+			</div>
 		</main>
 	</div>
 </div>
