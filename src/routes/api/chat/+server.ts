@@ -14,8 +14,16 @@ export async function POST({ request }) {
 	const { messages } = await request.json();
 
 	const stream = await openai.chat.completions.create({
-		model: 'gpt-3.5-turbo',
-		messages,
+		model: 'gpt-4-vision-preview',
+		messages: messages.map((message) => ({
+			role: message.role,
+			content: message?.data?.imageUrl
+				? [
+						{ type: 'text', text: message.content },
+						{ type: 'image_url', image_url: { url: message.data.imageUrl } }
+					]
+				: message.content
+		})),
 		stream: true
 	});
 

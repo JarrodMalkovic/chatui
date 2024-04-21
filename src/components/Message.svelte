@@ -6,7 +6,7 @@
 
 	export let message: any;
 	export let name: string;
-	export let imageUrl: string;
+	export let profilePicture: string;
 
 	let formattedMessage = '';
 
@@ -48,12 +48,12 @@
 		const encodedCode = btoa(unescape(encodeURIComponent(code)));
 		const buttonId = `copy-btn-${Math.random()}`;
 
-		return `<div class="relative group max-w-2xl">
+		return `<div class="relative group min-w-2xl max-w-2xl">
 					<div class="bg-zinc-700 rounded-t-xl p-1 flex justify-between">
 						<div class="px-2 py-1 text-white text-xs">${validLanguage}</div>
 						<button id="${buttonId}" class='px-2 py-1 text-white text-xs' onclick='copyToClipboard("${encodedCode}", "${buttonId}")'}>Copy code</button>
 					</div>
-                    <pre class="rounded-xl rounded-t-none overflow-x-auto border border-t-0 border-gray-500 max-w-2xl"><code class="hljs ${validLanguage} block p-4">${hljs.highlight(code, { language: validLanguage, ignoreIllegals: true }).value}</code></pre>
+                    <pre class="rounded-xl rounded-t-none overflow-x-auto border border-t-0 border-gray-500 min-w-2xl max-w-2xl"><code class="hljs ${validLanguage} block p-4">${hljs.highlight(code, { language: validLanguage, ignoreIllegals: true }).value}</code></pre>
                 </div>`;
 	};
 
@@ -98,9 +98,15 @@
 </script>
 
 <div class="flex space-x-2">
-	<img class="h-10 w-10 rounded-full object-cover" src={imageUrl} alt={`Image of ${name}`} />
+	<img class="h-10 w-10 rounded-full object-cover" src={profilePicture} alt={`Image of ${name}`} />
 	<div>
 		<div class="text-white font-bold text-sm">{name}</div>
-		<div class="text-white text-sm space-y-3">{@html formattedMessage}</div>
+
+		<div class="text-white text-sm space-y-3">
+			{#if message?.data?.imageUrl}
+				<img class="mt-3" src={message.data.imageUrl} />
+			{/if}
+			{@html formattedMessage}
+		</div>
 	</div>
 </div>

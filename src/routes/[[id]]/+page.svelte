@@ -3,22 +3,21 @@
 	import { useChat } from 'ai/svelte';
 	import Message from '../../components/Message.svelte';
 	import { user } from '$lib/auth';
-	import { supabase } from '$lib/supabaseClient';
+	import { supabase, supabaseUrl } from '$lib/supabaseClient';
 	import { onMount, tick } from 'svelte';
-	import { derived, writable } from 'svelte/store';
+	import { derived, get, writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import MdCreate from 'svelte-icons/md/MdCreate.svelte';
 	import GoKebabHorizontal from 'svelte-icons/go/GoKebabHorizontal.svelte';
 	import FaArrowDown from 'svelte-icons/fa/FaArrowDown.svelte';
 	import { fly } from 'svelte/transition';
+	import MdAttachFile from 'svelte-icons/md/MdAttachFile.svelte';
+	import MdSend from 'svelte-icons/md/MdSend.svelte';
+	import MdClose from 'svelte-icons/md/MdClose.svelte';
 
 	let conversations = writable<any[]>([]);
-	const {
-		input,
-		handleSubmit: makeAiRequest,
-		messages,
-		setMessages
-	} = useChat({
+	const { input, messages, append, setMessages } = useChat({
+		sendExtraMessageFields: true,
 		onFinish: async (message) => {
 			createMessage(message.content, $page.params.id, 'assistant');
 
@@ -48,23 +47,74 @@
 		}
 	});
 
+	let selectedFile = writable(null);
+	let imagePreviewUrl = null;
+	let isUploading = writable(false); // to track upload state
+	let uploadedImageUrl = writable(null); // to store the uploaded image URL
+
+	function removeAttachment() {
+		selectedFile.set(null);
+		imagePreviewUrl = null;
+		uploadedImageUrl.set(null);
+		isUploading.set(false);
+	}
+
+	function handleFileSelection(event) {
+		const file = event.target.files[0];
+		if (!file) return;
+
+		// Update the selected file store
+		selectedFile.set(file);
+		// Generate a URL to preview the selected image
+		imagePreviewUrl = URL.createObjectURL(file);
+
+		// Start the upload immediately
+		uploadFile(file);
+	}
+
+	async function uploadFile(file) {
+		isUploading.set(true);
+		const fileExt = file.name.split('.').pop();
+		const fileName = `${Math.random().toString(36)}.${fileExt}`;
+
+		let { data, error } = await supabase.storage.from('uploads').upload(fileName, file);
+
+		isUploading.set(false);
+
+		if (error) {
+			console.error('Error uploading file:', error);
+			return;
+		}
+
+		uploadedImageUrl.set(`${supabaseUrl}/storage/v1/object/public/${data?.fullPath}`);
+	}
+
 	async function handleSubmit(e) {
+		e.preventDefault();
 		if ($input.trim() === '') {
 			return;
 		}
 
 		let conversationId = $page.params.id == null ? null : $page.params.id;
-		console.log(conversationId);
 		let message = $input;
-		makeAiRequest(e);
+
+		append({
+			content: message,
+			role: 'user',
+			data: {
+				imageUrl: $uploadedImageUrl, // use the URL from the uploaded image
+				imagePreviewUrl
+			}
+		});
+		imagePreviewUrl = null;
+		input.set('');
 
 		if (conversationId == null && $user) {
-			console.log('create convo');
 			conversationId = await createConversation();
 			goto(`/${conversationId}`);
 		}
 
-		createMessage(message, conversationId, 'user');
+		createMessage(message, conversationId, 'user', $uploadedImageUrl);
 	}
 
 	async function fetchConversations() {
@@ -81,7 +131,6 @@
 	}
 
 	async function createConversation() {
-		console.log($user);
 		if (!$user) {
 			return;
 		}
@@ -91,7 +140,6 @@
 			.insert({ user_id: $user.id })
 			.select('*');
 
-		console.log({ data });
 		if (data && data.length > 0) {
 			conversations.update((currentConversations) => {
 				return [data[0], ...currentConversations];
@@ -117,22 +165,30 @@
 		} else if (data) {
 			setMessages(
 				data.map((message) => ({
-					id: message.id.toString(), // ensure the id is converted to string
+					id: message.id.toString(),
 					content: message.content,
-					role: message.role
+					role: message.role,
+					data: {
+						imageUrl: message.image_url
+					}
 				}))
 			);
 		}
 	}
 
-	async function createMessage(message: string, conversationId: string, role: string) {
+	async function createMessage(
+		message: string,
+		conversationId: string,
+		role: string,
+		imageUrl?: string
+	) {
 		if (!$user) {
 			return;
 		}
 
 		await supabase
 			.from('messages')
-			.insert({ conversation_id: conversationId, content: message, role })
+			.insert({ conversation_id: conversationId, content: message, role, image_url: imageUrl })
 			.select('*');
 	}
 
@@ -308,12 +364,11 @@
 				<div
 					tabindex="0"
 					role="button"
-					class="mt-2 hover:bg-zinc-800 p-2 flex space-x-4 rounded-lg"
+					class="mt-2 hover:bg-zinc-800 p-2 flex space-x-4 rounded-lg items-center"
 				>
-					<img class="h-10 w-10 rounded-full" src={$user.profilePicture} />
+					<img class="h-8 w-8 rounded-full" src={$user.profilePicture} />
 					<div class="text-left">
-						<h1 class="text-zinc-400 text-sm">Logged in as</h1>
-						<h2>{$user.username}</h2>
+						<h2 class="text-sm">{$user.username}</h2>
 					</div>
 				</div>
 				<ul
@@ -366,10 +421,16 @@
 								<Message
 									{message}
 									name={'You'}
-									imageUrl={$user ? $user.profilePicture : './assets/default-profile-picture.webp'}
+									profilePicture={$user
+										? $user.profilePicture
+										: './assets/default-profile-picture.webp'}
 								/>
 							{:else}
-								<Message {message} name={'AI'} imageUrl={'./assets/ai-profile-picture.webp'} />
+								<Message
+									{message}
+									name={'AI'}
+									profilePicture={'./assets/ai-profile-picture.webp'}
+								/>
 							{/if}
 						{/each}
 					</div>
@@ -390,22 +451,73 @@
 				{/if}
 				<div class="bg-zinc-900">
 					<form on:submit={handleSubmit} class="px-4 flex">
-						<div class="p-2 flex w-full">
-							<textarea
-								bind:value={$input}
-								bind:this={textarea}
-								on:input={autoGrow}
-								on:keydown={handleKeyDown}
-								rows="1"
-								placeholder="Message AI..."
-								class="focus:border-zinc-600 border border-r-0 input rounded-r-none flex-grow outline-none bg-zinc-800 ring-0 focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
-							/>
-							<button
-								type="submit"
-								class="button bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 text-sm px-4 rounded-r-lg"
-							>
-								Send
-							</button>
+						<div
+							class="m-2 w-full border border-zinc-700 focus-within:border-zinc-600 focus-within:border rounded-lg bg-zinc-800"
+						>
+							{#if imagePreviewUrl}
+								<div class="relative p-2 w-content">
+									<div class="w-fit">
+										<img src={imagePreviewUrl} alt="Preview" class="h-14 w-14 rounded-md" />
+										{#if $isUploading}
+											<div
+												class="mt-2 absolute top-0 h-14 w-14 flex justify-center items-center bg-black bg-opacity-50 rounded-md"
+											>
+												<svg
+													class="animate-spin h-5 w-5 text-white"
+													xmlns="http://www.w3.org/2000/svg"
+													fill="none"
+													viewBox="0 0 24 24"
+												>
+													<circle
+														class="opacity-25"
+														cx="12"
+														cy="12"
+														r="10"
+														stroke="currentColor"
+														stroke-width="4"
+													></circle>
+													<path
+														class="opacity-75"
+														fill="currentColor"
+														d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+													></path>
+												</svg>
+											</div>
+										{/if}
+										<button
+											class="absolute top-0 left-14 p-1 w-5 h-5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 cursor-pointer"
+											on:click={removeAttachment}
+										>
+											<MdClose class="text-white" />
+										</button>
+									</div>
+								</div>
+							{/if}
+							<div class="flex">
+								<input type="file" id="file" class="hidden" on:change={handleFileSelection} />
+
+								<label
+									for="file"
+									class="text-zinc-300 hover:text-white font-bold text-sm rounded-lg cursor-pointer w-10 h-10 p-2"
+								>
+									<MdAttachFile />
+								</label>
+								<textarea
+									bind:value={$input}
+									bind:this={textarea}
+									on:input={autoGrow}
+									on:keydown={handleKeyDown}
+									rows="1"
+									placeholder="Message AI..."
+									class="flex-grow outline-none ring-0 bg-inherit border-0 rounded-lg focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
+								/>
+								<button
+									type="submit"
+									class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
+								>
+									<MdSend />
+								</button>
+							</div>
 						</div>
 					</form>
 					<p class="text-xs text-zinc-400 px-6 pb-4 text-center">

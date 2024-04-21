@@ -13,7 +13,6 @@ export const config = {
 export async function POST({ request }) {
 	const { initialMessage } = await request.json();
 
-	console;
 	const prompt = `
         You are an expert wordsmith, whose goal is to take in an initial message,
         and shorten it into a 1-4 word summary.
