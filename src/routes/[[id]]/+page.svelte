@@ -17,7 +17,8 @@
 	import MdChevronLeft from 'svelte-icons/md/MdChevronLeft.svelte';
 	import MdChevronRight from 'svelte-icons/md/MdChevronRight.svelte';
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
-	import { Modal } from 'flowbite-svelte';
+	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
+	import { Button, Dropdown, DropdownItem, Modal } from 'flowbite-svelte';
 
 	let showModal = false;
 	let conversationToDelete = null;
@@ -366,7 +367,7 @@
 	on:drop|preventDefault={handleDrop}
 	on:dragenter|preventDefault={handleDragEnter}
 	on:dragleave|preventDefault={handleDragLeave}
-	role="button"
+	role="dialog"
 	aria-label="Drop files here to upload"
 	tabindex="0"
 >
@@ -393,32 +394,30 @@
 		</div>
 	</button>
 
+	<Modal
+		bind:open={showModal}
+		dismissable={false}
+		outsideclose={true}
+		size="xs"
+		class="bg-zinc-800"
+		backdropClass="fixed inset-0 z-40 bg-zinc-950 bg-opacity-70"
+	>
+		<div class="mx-auto mb-4 text-white w-12 h-12"><MdWarning /></div>
+		<div class="text-center space-x-2 text-white">
+			<h3 class="mb-5 text-md font-normal">Are you sure you want to delete this conversation?</h3>
+			<button
+				class="text-sm border p-2 rounded-xl border-zinc-500"
+				on:click={() => (showModal = false)}>Cancel</button
+			>
+			<button class="text-sm p-2 rounded-xl bg-red-600 hover:bg-red-800" on:click={confirmDelete}
+				>Delete</button
+			>
+		</div>
+	</Modal>
+
 	{#if isSidebarVisible}
 		<div class="transition-transform duration-300 transform bg-zinc-950">
 			<div class="flex flex-col w-72 pb-4 pl-4 pr-0.5 h-screen bg-zinc-950 justify-end text-white">
-				<Modal
-					bind:open={showModal}
-					dismissable={false}
-					outsideclose={true}
-					size="xs"
-					class="bg-zinc-800"
-					backdropClass="fixed inset-0 z-40 bg-zinc-950 bg-opacity-70"
-				>
-					<div class="mx-auto mb-4 text-white w-12 h-12"><MdWarning /></div>
-					<div class="text-center space-x-2 text-white">
-						<h3 class="mb-5 text-md font-normal">
-							Are you sure you want to delete this conversation?
-						</h3>
-						<button
-							class="text-sm border p-2 rounded-xl border-zinc-500"
-							on:click={() => (showModal = false)}>Cancel</button
-						>
-						<button
-							class="text-sm p-2 rounded-xl bg-red-600 hover:bg-red-800"
-							on:click={confirmDelete}>Delete</button
-						>
-					</div>
-				</Modal>
 				<div class="flex-1 overflow-y-auto space-y-3 px-2 pr-4 relative overflow-x-visible">
 					<a
 						class="flex justify-between items-center mt-4 text-white pl-2 py-2 block text-xs hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
@@ -522,6 +521,18 @@
 	{/if}
 
 	<div bind:this={container} class="w-full overflow-y-scroll">
+		<div class="absolute m-2">
+			<button class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl"
+				>ChatGPT 4 <div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
+			>
+			<Dropdown>
+				<div>test</div>
+				<DropdownItem>Dashboard</DropdownItem>
+				<DropdownItem>Settings</DropdownItem>
+				<DropdownItem>Earnings</DropdownItem>
+				<DropdownItem>Sign out</DropdownItem>
+			</Dropdown>
+		</div>
 		<main class="container max-w-3xl mx-auto h-screen flex flex-col">
 			{#if !$messages.length}
 				<div class="h-full flex items-center justify-center">
@@ -532,8 +543,8 @@
 				</div>
 			{:else}
 				<div class="flex-1 p-4">
-					<div class="space-y-4">
-						{#each $messages as message, index}
+					{#each $messages as message, index}
+						<div class="mb-4">
 							{#if message.role === 'user'}
 								<Message
 									{message}
@@ -551,8 +562,8 @@
 									profilePicture={'./assets/ai-profile-picture.webp'}
 								/>
 							{/if}
-						{/each}
-					</div>
+						</div>
+					{/each}
 				</div>
 			{/if}
 

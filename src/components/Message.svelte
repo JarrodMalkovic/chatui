@@ -5,6 +5,7 @@
 	import FaRegClipboard from 'svelte-icons/fa/FaRegClipboard.svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 	import TiTick from 'svelte-icons/ti/TiTick.svelte';
+	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import hljs from 'highlight.js';
 	import 'highlight.js/styles/a11y-dark.css'; // Stylish dark theme for code blocks
 	import { Tooltip } from 'flowbite-svelte';
@@ -18,6 +19,7 @@
 	let audio = new Audio();
 	let playing = false;
 	let loading = false;
+	let isOverlayVisible = false;
 
 	const handleAudioPlayPause = () => {
 		if (audio.src) {
@@ -107,11 +109,19 @@
 	});
 
 	onDestroy(() => {
+		window.removeEventListener('keydown', handleKeyDown);
+
 		if (audio) {
 			audio.pause();
 			audio.src = '';
 		}
 	});
+
+	function handleKeyDown(event) {
+		if (event.key === 'Escape') {
+			isOverlayVisible = false;
+		}
+	}
 
 	function handleSpeakMessageClick(): void {
 		loading = true;
@@ -149,6 +159,8 @@
 	});
 
 	onMount(async () => {
+		window.addEventListener('keydown', handleKeyDown);
+
 		if (message.content) {
 			formattedMessage = parse(message.content);
 		}
@@ -166,7 +178,12 @@
 
 		<div class="text-white text-sm space-y-3">
 			{#if message?.data?.imageUrl}
-				<img class="mt-3" src={message.data.imageUrl} />
+				<img
+					class="mt-3 cursor-pointer w-96"
+					src={message.data.imageUrl}
+					alt="Message image"
+					on:click={() => (isOverlayVisible = true)}
+				/>
 			{/if}
 			{@html formattedMessage}
 		</div>
@@ -241,5 +258,23 @@
 	</div>
 </div>
 
-<style>
-</style>
+{#if isOverlayVisible}
+	<div
+		class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center z-50"
+		on:click={(event) => {
+			if (event.target === event.currentTarget) isOverlayVisible = false;
+		}}
+	>
+		<button
+			on:click={() => {
+				isOverlayVisible = false;
+			}}
+			aria-label="Close"
+		>
+			<div class="w-5 h-5">
+				<MdClose />
+			</div>
+		</button>
+		<img src={message.data.imageUrl} class="max-w-full max-h-full" alt="Full size image" />
+	</div>
+{/if}
