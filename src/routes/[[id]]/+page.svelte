@@ -19,6 +19,7 @@
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
 	import { Button, Dropdown, DropdownItem, Modal } from 'flowbite-svelte';
+	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 
 	let showModal = false;
 	let conversationToDelete = null;
@@ -28,10 +29,13 @@
 		isSidebarVisible = !isSidebarVisible;
 	}
 
+	let isGenerating = false;
 	let conversations = writable<any[]>([]);
-	const { input, messages, append, setMessages } = useChat({
+	const { input, messages, append, setMessages, stop } = useChat({
 		sendExtraMessageFields: true,
+		onError: async () => console.log('err'),
 		onFinish: async (message) => {
+			isGenerating = false;
 			createMessage(message.content, $page.params.id, 'assistant');
 
 			if ($messages.length == 2) {
@@ -59,6 +63,36 @@
 			}
 		}
 	});
+
+	async function handleStopClick() {
+		stop();
+		isGenerating = false;
+		createMessage($messages[$messages.length - 1].content, $page.params.id, 'assistant');
+
+		if ($messages.length == 2) {
+			const response = await fetch('/api/generate-title', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ initialMessage: $messages[0].content })
+			});
+			const titleResponse = await response.json();
+
+			conversations.update((currentConversations) => {
+				return currentConversations.map((currentConversation) =>
+					currentConversation.id === $page.params.id
+						? { ...currentConversation, title: titleResponse.title }
+						: currentConversation
+				);
+			});
+
+			await supabase
+				.from('conversations')
+				.update({ title: titleResponse.title })
+				.eq('id', $page.params.id);
+		}
+	}
 
 	let selectedFile = writable(null);
 	let imagePreviewUrl = null;
@@ -110,6 +144,7 @@
 
 		let conversationId = $page.params.id == null ? null : $page.params.id;
 		let message = $input;
+		isGenerating = true;
 
 		append({
 			content: message,
@@ -740,12 +775,20 @@
 									placeholder="Message AI..."
 									class="flex-grow outline-none ring-0 bg-inherit border-0 rounded-lg focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
 								/>
-								<button
-									type="submit"
-									class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
-								>
-									<MdSend />
-								</button>
+								{#if isGenerating}
+									<button
+										on:click={handleStopClick}
+										class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
+									>
+										<FaPause />
+									</button>{:else}
+									<button
+										type="submit"
+										class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
+									>
+										<MdSend />
+									</button>
+								{/if}
 							</div>
 						</div>
 					</form>
