@@ -1,15 +1,33 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { Renderer, setOptions, parse } from 'marked';
+	import GoPlay from 'svelte-icons/go/GoPlay.svelte';
+	import FaRegClipboard from 'svelte-icons/fa/FaRegClipboard.svelte';
+	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 	import hljs from 'highlight.js';
 	import 'highlight.js/styles/a11y-dark.css'; // Stylish dark theme for code blocks
 
 	export let message: any;
 	export let name: string;
 	export let profilePicture: string;
+	export let isLastMessage = false;
 
 	let formattedMessage = '';
+	let audio = new Audio();
+	let playing = false;
+	let loading = false;
 
+	const handleAudioPlayPause = () => {
+		if (audio.src) {
+			if (!audio.paused) {
+				audio.pause();
+				playing = false;
+			} else {
+				audio.play();
+				playing = true;
+			}
+		}
+	};
 	const renderer = new Renderer();
 
 	// Header with bold based on level
@@ -86,6 +104,42 @@
 		breaks: true
 	});
 
+	onDestroy(() => {
+		if (audio) {
+			audio.pause();
+			audio.src = '';
+		}
+	});
+
+	function handleSpeakMessageClick(): void {
+		loading = true;
+		fetch('/api/voice', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ text: message.content })
+		})
+			.then((response) => response.blob())
+			.then((blob) => {
+				const url = URL.createObjectURL(blob);
+				audio.src = url;
+				audio.play();
+				playing = true;
+				loading = false;
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+				loading = false;
+			});
+	}
+
+	function handleCopyToKeyboardClick(): void {
+		navigator.clipboard.writeText(message.content);
+	}
+
+	audio.addEventListener('ended', () => {
+		playing = false;
+	});
+
 	onMount(async () => {
 		if (message.content) {
 			formattedMessage = parse(message.content);
@@ -97,7 +151,7 @@
 	}
 </script>
 
-<div class="flex space-x-2">
+<div class="flex space-x-2 group">
 	<img class="h-10 w-10 rounded-full object-cover" src={profilePicture} alt={`Image of ${name}`} />
 	<div>
 		<div class="text-white font-bold text-sm">{name}</div>
@@ -108,5 +162,41 @@
 			{/if}
 			{@html formattedMessage}
 		</div>
+		<div
+			class="mt-2 space-x-1.5 flex items-center {isLastMessage
+				? ''
+				: 'invisible group-hover:visible'}"
+		>
+			{#if loading}
+				<svg
+					class="animate-spin h-4 w-4 text-white"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+				>
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle>
+					<path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					></path>
+				</svg>
+			{:else if playing}
+				<button class="w-4 h-4 text-zinc-300" on:click={handleAudioPlayPause}>
+					<FaPause />
+				</button>
+			{:else}
+				<button class="w-4 h-4 text-zinc-300" on:click={handleSpeakMessageClick}>
+					<GoPlay />
+				</button>
+			{/if}
+			<button class="w-4 h-4 text-zinc-300" on:click={handleCopyToKeyboardClick}>
+				<FaRegClipboard />
+			</button>
+		</div>
 	</div>
 </div>
+
+<style>
+</style>

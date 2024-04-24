@@ -311,7 +311,7 @@
 			<a
 				class="flex justify-between items-center mt-4 text-white pl-2 py-2 block text-xs hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
 				href="/"
-				>Start new conversation
+				>New chat
 				<div class="w-4 h-4 mr-2">
 					<MdCreate />
 				</div>
@@ -416,11 +416,12 @@
 			{:else}
 				<div class="flex-1 p-4">
 					<div class="space-y-4">
-						{#each $messages as message}
+						{#each $messages as message, index}
 							{#if message.role === 'user'}
 								<Message
 									{message}
 									name={'You'}
+									isLastMessage={index === $messages.length - 1}
 									profilePicture={$user
 										? $user.profilePicture
 										: './assets/default-profile-picture.webp'}
@@ -429,6 +430,7 @@
 								<Message
 									{message}
 									name={'AI'}
+									isLastMessage={index === $messages.length - 1}
 									profilePicture={'./assets/ai-profile-picture.webp'}
 								/>
 							{/if}
