@@ -124,6 +124,12 @@
 	}
 
 	function handleSpeakMessageClick(): void {
+		if (audio.src) {
+			audio.play();
+			playing = true;
+			return;
+		}
+
 		loading = true;
 		fetch('/api/voice', {
 			method: 'POST',
@@ -232,7 +238,7 @@
 						type="light"
 						placement="bottom"
 						class="z-50 p-2 text-xs mt-1"
-						triggeredBy="#play-audio-button">Play</Tooltip
+						triggeredBy="#play-audio-button">Read aloud</Tooltip
 					>
 				</button>
 			{/if}
