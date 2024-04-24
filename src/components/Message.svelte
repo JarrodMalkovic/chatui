@@ -4,6 +4,7 @@
 	import GoPlay from 'svelte-icons/go/GoPlay.svelte';
 	import FaRegClipboard from 'svelte-icons/fa/FaRegClipboard.svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
+	import TiTick from 'svelte-icons/ti/TiTick.svelte';
 	import hljs from 'highlight.js';
 	import 'highlight.js/styles/a11y-dark.css'; // Stylish dark theme for code blocks
 	import { Tooltip } from 'flowbite-svelte';
@@ -133,8 +134,14 @@
 			});
 	}
 
+	let showTick = false;
 	function handleCopyToKeyboardClick(): void {
-		navigator.clipboard.writeText(message.content);
+		navigator.clipboard.writeText(message.content).then(() => {
+			showTick = true;
+			setTimeout(() => {
+				showTick = false;
+			}, 2000);
+		});
 	}
 
 	audio.addEventListener('ended', () => {
@@ -213,18 +220,22 @@
 				</button>
 			{/if}
 			<button
-				id="copy-to-clipboard-buttom"
+				id="copy-to-clipboard-button"
 				type="button"
 				class="w-4 h-4 text-zinc-300"
 				on:click={handleCopyToKeyboardClick}
 			>
-				<FaRegClipboard />
-				<Tooltip
-					type="light"
-					placement="bottom"
-					class="z-50 p-2 text-xs mt-1"
-					triggeredBy="#copy-to-clipboard-buttom">Copy to clipboard</Tooltip
-				>
+				{#if showTick}
+					<TiTick />
+				{:else}
+					<FaRegClipboard />
+					<Tooltip
+						type="light"
+						placement="bottom"
+						class="z-50 p-2 text-xs mt-1"
+						triggeredBy="#copy-to-clipboard-button">Copy</Tooltip
+					>
+				{/if}
 			</button>
 		</div>
 	</div>
