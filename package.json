@@ -40,11 +40,15 @@
 		"@tailwindcss/forms": "^0.5.7",
 		"@vercel/analytics": "^1.2.2",
 		"ai": "^3.0.22",
+		"core]": "link:@popperjs/core]",
+		"flowbite": "^2.3.0",
+		"flowbite-svelte": "^0.46.0",
 		"highlight.js": "^11.9.0",
 		"marked": "^12.0.2",
 		"md5": "^2.3.0",
 		"openai": "^4.33.0",
 		"svelte-icons": "^2.1.0",
+		"tailwind-merge": "^2.3.0",
 		"zod": "^3.22.4"
 	}
 }

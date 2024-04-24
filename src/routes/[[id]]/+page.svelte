@@ -288,6 +288,36 @@
 		}
 	}
 
+	let dragActive = writable(false); // To track if a drag is active for visual feedback
+
+	function handleDragOver(event) {
+		event.preventDefault(); // Necessary to allow for dropping
+		dragActive.set(true);
+	}
+
+	function handleDrop(event) {
+		event.preventDefault();
+		dragActive.set(false);
+		const file = event.dataTransfer.files[0]; // Assuming only one file is dropped
+		if (file) {
+			selectedFile.set(file);
+			imagePreviewUrl = URL.createObjectURL(file);
+			uploadFile(file);
+		}
+	}
+
+	function handleDragEnter(event) {
+		event.preventDefault();
+		dragActive.set(true);
+	}
+
+	function handleDragLeave(event) {
+		event.preventDefault();
+		if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
+			dragActive.set(false);
+		}
+	}
+
 	onMount(async () => {
 		container.addEventListener('scroll', handleScroll);
 		fetchConversations();
@@ -305,7 +335,23 @@
 	$: $messages, scrollToBottom();
 </script>
 
-<div class="flex bg-zinc-900">
+<div
+	class="flex bg-zinc-900"
+	on:dragover|preventDefault={handleDragOver}
+	on:drop|preventDefault={handleDrop}
+	on:dragenter|preventDefault={handleDragEnter}
+	on:dragleave|preventDefault={handleDragLeave}
+	role="button"
+	aria-label="Drop files here to upload"
+	tabindex="0"
+>
+	{#if $dragActive}
+		<div
+			class="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-black bg-opacity-50 z-50 pointers"
+		>
+			<p class="text-white font-bold text-lg">Drop file to upload</p>
+		</div>
+	{/if}
 	<div class="flex flex-col w-72 pb-4 pl-4 pr-0.5 h-screen bg-zinc-950 justify-end text-white">
 		<div class="flex-1 overflow-y-auto space-y-3 px-2 pr-4 relative overflow-x-visible">
 			<a

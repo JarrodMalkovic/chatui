@@ -6,6 +6,7 @@
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 	import hljs from 'highlight.js';
 	import 'highlight.js/styles/a11y-dark.css'; // Stylish dark theme for code blocks
+	import { Tooltip } from 'flowbite-svelte';
 
 	export let message: any;
 	export let name: string;
@@ -45,7 +46,7 @@
 
 	// Paragraphs
 	renderer.paragraph = (text) => {
-		return `<p class="mb-4">${text}</p>`;
+		return `<p>${text}</p>`;
 	};
 
 	// Code blocks with syntax highlighting
@@ -79,7 +80,7 @@
 	renderer.list = (body, ordered, start) => {
 		const type = ordered ? 'ol' : 'ul';
 		const startAttr = ordered && start !== 1 ? ` start="${start}"` : '';
-		return `<${type} class="list-decimal ml-5 mt-2 mb-2" ${startAttr}>${body}</${type}>`;
+		return `<${type} class="list-decimal ml-5 mt-2 mb-2 space-y-2" ${startAttr}>${body}</${type}>`;
 	};
 
 	// List items
@@ -183,16 +184,47 @@
 					></path>
 				</svg>
 			{:else if playing}
-				<button class="w-4 h-4 text-zinc-300" on:click={handleAudioPlayPause}>
+				<button
+					id="pause-audio-button"
+					class="w-4 h-4 text-zinc-300"
+					on:click={handleAudioPlayPause}
+				>
 					<FaPause />
+					<Tooltip
+						type="light"
+						placement="bottom"
+						class="z-50 p-2 text-xs mt-1"
+						triggeredBy="#pause-audio-button">Pause</Tooltip
+					>
 				</button>
 			{:else}
-				<button class="w-4 h-4 text-zinc-300" on:click={handleSpeakMessageClick}>
+				<button
+					id="play-audio-button"
+					class="w-4 h-4 text-zinc-300"
+					on:click={handleSpeakMessageClick}
+				>
 					<GoPlay />
+					<Tooltip
+						type="light"
+						placement="bottom"
+						class="z-50 p-2 text-xs mt-1"
+						triggeredBy="#play-audio-button">Play</Tooltip
+					>
 				</button>
 			{/if}
-			<button class="w-4 h-4 text-zinc-300" on:click={handleCopyToKeyboardClick}>
+			<button
+				id="copy-to-clipboard-buttom"
+				type="button"
+				class="w-4 h-4 text-zinc-300"
+				on:click={handleCopyToKeyboardClick}
+			>
 				<FaRegClipboard />
+				<Tooltip
+					type="light"
+					placement="bottom"
+					class="z-50 p-2 text-xs mt-1"
+					triggeredBy="#copy-to-clipboard-buttom">Copy to clipboard</Tooltip
+				>
 			</button>
 		</div>
 	</div>
