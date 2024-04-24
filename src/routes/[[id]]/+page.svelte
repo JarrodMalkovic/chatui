@@ -258,6 +258,20 @@
 		showScrollButton = false;
 	}
 
+	let renameInput;
+	let conversationToRename = null;
+	function handleRenameClick(conversationId) {
+		conversationToRename = conversationId;
+		focusRenameInput();
+	}
+
+	async function focusRenameInput() {
+		await tick(); // Ensure the DOM is updated
+		if (renameInput) {
+			renameInput.focus(); // Focus the input if it exists
+		}
+	}
+
 	async function logOut() {
 		await supabase.auth.signOut();
 		conversations.set([]);
@@ -342,6 +356,22 @@
 		if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
 			dragActive.set(false);
 		}
+	}
+
+	async function handleUpdateConversationTitle(event) {
+		event.preventDefault();
+		await supabase
+			.from('conversations')
+			.update({ title: event.target.value })
+			.eq('id', conversationToRename);
+		conversations.update((currentConversations) => {
+			return currentConversations.map((currentConversation) =>
+				currentConversation.id === conversationToRename
+					? { ...currentConversation, title: event.target.value }
+					: currentConversation
+			);
+		});
+		conversationToRename = null;
 	}
 
 	onMount(async () => {
@@ -433,39 +463,52 @@
 							<div>
 								<h1 class="text-xs p-2 py-2 font-bold text-zinc-400">{period}</h1>
 								{#each convos as conversation}
-									<div
-										class="group flex pr-2 justify-between items-center block text-xs hover:bg-zinc-800 w-full rounded-lg {conversation.id ==
-										$page.params.id
-											? 'bg-zinc-900'
-											: ''}"
-									>
-										<a
-											class="text-white pl-2 py-2 text-left truncate w-full h-full"
-											href="/{conversation.id}">{conversation.title ?? 'New chat'}</a
+									{#if conversation.id === conversationToRename}
+										<input
+											bind:this={renameInput}
+											class="text-white px-2 py-2 bg-transparent rounded-lg w-full text-xs bg-zinc-800"
+											value={conversation.title}
+											on:focusout={handleUpdateConversationTitle}
+										/>
+									{:else}
+										<div
+											class="group flex pr-2 justify-between items-center block text-xs hover:bg-zinc-800 w-full rounded-lg {conversation.id ==
+											$page.params.id
+												? 'bg-zinc-900'
+												: ''}"
 										>
-										<div class="dropdown dropdown-end relative">
-											<div
-												tabindex="0"
-												role="button"
-												class="relative group-hover:opacity-100 max-h-4 max-w-4 hover:text-zinc-400 {conversation.id ==
-												$page.params.id
-													? 'opacity-100'
-													: 'opacity-0'}"
+											<a
+												class="text-white pl-2 py-2 text-left truncate w-full h-full"
+												href="/{conversation.id}">{conversation.title ?? 'New chat'}</a
 											>
-												<GoKebabHorizontal />
+											<div class="dropdown dropdown-end relative">
+												<div
+													tabindex="0"
+													role="button"
+													class="relative group-hover:opacity-100 max-h-4 max-w-4 hover:text-zinc-400 {conversation.id ==
+													$page.params.id
+														? 'opacity-100'
+														: 'opacity-0'}"
+												>
+													<GoKebabHorizontal />
+												</div>
+												<ul
+													tabindex="0"
+													class="dropdown-content bg-zinc-800 border-zinc-500 border menu z-[999] p-2 shadow rounded-box w-52"
+												>
+													<li>
+														<button on:click={() => handleRenameClick(conversation.id)}>
+															Rename
+														</button>
+													</li>
+													<li>
+														<button on:click={() => handleDeleteClick(conversation.id)}>
+															Delete
+														</button>
+													</li>
+												</ul>
 											</div>
-											<ul
-												tabindex="0"
-												class="dropdown-content bg-zinc-800 border-zinc-500 border menu z-[999] p-2 shadow rounded-box w-52"
-											>
-												<li>
-													<button on:click={() => handleDeleteClick(conversation.id)}>
-														Delete
-													</button>
-												</li>
-											</ul>
-										</div>
-									</div>
+										</div>{/if}
 								{/each}
 							</div>
 						{/if}
