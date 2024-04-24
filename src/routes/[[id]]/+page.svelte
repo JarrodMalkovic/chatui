@@ -102,8 +102,8 @@
 		uploadedImageUrl.set(`${supabaseUrl}/storage/v1/object/public/${data?.fullPath}`);
 	}
 
-	async function handleSubmit(e) {
-		e.preventDefault();
+	async function handleSubmit(e = null) {
+		e?.preventDefault();
 		if ($input.trim() === '') {
 			return;
 		}
@@ -128,6 +128,11 @@
 		}
 
 		createMessage(message, conversationId, 'user', $uploadedImageUrl);
+	}
+
+	function handleSuggestionClick(suggestedMessage: string) {
+		$input = suggestedMessage;
+		handleSubmit();
 	}
 
 	async function fetchConversations() {
@@ -583,6 +588,57 @@
 						<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
 						<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
 					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-4 mb-2 m-6">
+					<button
+						on:click={() =>
+							handleSuggestionClick(
+								'Write a thank-you note to our babysitter for the last-minute help'
+							)}
+						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis"
+					>
+						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+							Write a thank-you note
+						</h2>
+						<h3 class="text-sm overflow-ellipsis truncate">
+							to our babysitter for the last-minute help
+						</h3>
+					</button>
+
+					<button
+						on:click={() => handleSuggestionClick('Create a charter to start a film club')}
+						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+					>
+						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+							Create a charter
+						</h2>
+						<h3 class="text-sm overflow-ellipsis truncate">to start a film club</h3>
+					</button>
+					<button
+						on:click={() =>
+							handleSuggestionClick(
+								'Brainstorm edge cases for a function with birthday as input, horoscope as output'
+							)}
+						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
+					>
+						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+							Brainstorm edge cases
+						</h2>
+						<h3 class="text-sm overflow-ellipsis truncate">
+							for a function with birthday as input, horoscope as output
+						</h3>
+					</button>
+					<button
+						on:click={() =>
+							handleSuggestionClick('Plan a trip to explore the Madagascar wildlife on a budget')}
+						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+					>
+						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">Plan a trip</h2>
+						<h3 class="text-sm overflow-ellipsis truncate">
+							to explore the Madagascar wildlife on a budget
+						</h3>
+					</button>
 				</div>
 			{:else}
 				<div class="flex-1 p-4">
