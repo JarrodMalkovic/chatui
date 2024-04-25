@@ -106,6 +106,23 @@
 		isUploading.set(false);
 	}
 
+	let confirmNewChatModal = false; // New state for the new chat confirmation modal
+	function handleNewChat() {
+		if ($user) {
+			// User is logged in, navigate to home
+			goto('/');
+		} else if ($messages.length > 0) {
+			// User is logged out, show confirmation modal
+			confirmNewChatModal = true;
+		}
+	}
+
+	// Function to confirm new chat from modal
+	function confirmNewChat() {
+		setMessages([]); // Clear messages
+		confirmNewChatModal = false; // Close modal
+	}
+
 	function handleFileSelection(event) {
 		const file = event.target.files[0];
 		if (!file) return;
@@ -465,6 +482,34 @@
 	</button>
 
 	<Modal
+		bind:open={confirmNewChatModal}
+		dismissable={false}
+		outsideclose={true}
+		size="xs"
+		class="bg-zinc-800"
+		backdropClass="fixed inset-0 z-40 bg-zinc-950 bg-opacity-70"
+	>
+		<div class="text-center space-x-2 text-white space-y-3">
+			<h3 class="text-md font-bold">Start a new chat?</h3>
+			<p class="text-sm">
+				Your current chat will no longer be accessible. <a class="underline" href="/signup"
+					>Sign up</a
+				>
+				or
+				<a class="underline" href="/signin">log in</a> to save chats.
+			</p>
+			<button
+				class="text-sm border p-2 rounded-xl border-zinc-500"
+				on:click={() => (confirmNewChatModal = false)}>Cancel</button
+			>
+			<button
+				class="text-sm p-2 rounded-xl bg-violet-600 hover:bg-violet-800"
+				on:click={confirmNewChat}>New chat</button
+			>
+		</div>
+	</Modal>
+
+	<Modal
 		bind:open={showModal}
 		dismissable={false}
 		outsideclose={true}
@@ -492,7 +537,9 @@
 					<a
 						class="flex justify-between items-center mt-4 text-white pl-2 py-2 block text-xs hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
 						href="/"
-						>New chat
+						on:click|preventDefault={handleNewChat}
+					>
+						New chat
 						<div class="w-4 h-4 mr-2">
 							<MdCreate />
 						</div>
