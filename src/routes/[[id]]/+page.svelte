@@ -417,18 +417,21 @@
 
 	async function handleUpdateConversationTitle(event) {
 		event.preventDefault();
-		await supabase
-			.from('conversations')
-			.update({ title: event.target.value })
-			.eq('id', conversationToRename);
-		conversations.update((currentConversations) => {
-			return currentConversations.map((currentConversation) =>
-				currentConversation.id === conversationToRename
-					? { ...currentConversation, title: event.target.value }
-					: currentConversation
-			);
-		});
 		conversationToRename = null;
+
+		if (event.target.value) {
+			await supabase
+				.from('conversations')
+				.update({ title: event.target.value })
+				.eq('id', conversationToRename);
+			conversations.update((currentConversations) => {
+				return currentConversations.map((currentConversation) =>
+					currentConversation.id === conversationToRename
+						? { ...currentConversation, title: event.target.value }
+						: currentConversation
+				);
+			});
+		}
 	}
 
 	onMount(async () => {
@@ -652,7 +655,7 @@
 
 	<div bind:this={container} class="w-full overflow-y-scroll">
 		<div class="absolute m-2">
-			<button class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl"
+			<button class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl font-semibold"
 				>ChatGPT 4 <div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
 			>
 			<Dropdown>
