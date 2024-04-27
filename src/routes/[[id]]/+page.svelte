@@ -21,6 +21,7 @@
 	import { Dropdown, Modal } from 'flowbite-svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 
+	let searchTerm = writable('');
 	let dropdownOpen = false;
 	let selectedModel = writable(null);
 	let showModal = false;
@@ -113,7 +114,7 @@
 		if ($user) {
 			await goto('/');
 			await tick();
-			const defaultModel = $organisations
+			const defaultModel = $unfilteredOrganisations
 				.flatMap((organisations) => organisations.models)
 				.filter((model) => model.is_default);
 			if (defaultModel[0]) {
@@ -128,7 +129,7 @@
 	// Function to confirm new chat from modal
 	function confirmNewChat() {
 		setMessages([]); // Clear messages
-		const defaultModel = $organisations
+		const defaultModel = $unfilteredOrganisations
 			.flatMap((organisations) => organisations.models)
 			.filter((model) => model.is_default);
 		if (defaultModel[0]) {
@@ -177,7 +178,17 @@
 		}
 	}
 
-	let organisations = writable<any[]>([]);
+	let unfilteredOrganisations = writable([]);
+	let filteredOrganisations = derived(
+		[unfilteredOrganisations, searchTerm],
+		([$unfilteredOrganisations, $searchTerm]) =>
+			$unfilteredOrganisations.map((org) => ({
+				...org,
+				models: org.models.filter((model) =>
+					model.name.toLowerCase().includes($searchTerm.toLowerCase())
+				)
+			}))
+	);
 	async function fetchModelsByOrganisation() {
 		const { data, error } = await supabase
 			.from('organisations')
@@ -199,7 +210,7 @@
 			return [];
 		}
 
-		return organisations.set(data);
+		return unfilteredOrganisations.set(data);
 	}
 
 	async function uploadFile(file) {
@@ -268,6 +279,7 @@
 				`
 			id,
             title,
+			created_at,
             models (
 				id,
 				name,
@@ -535,13 +547,13 @@
 	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
 	$: $user, fetchConversations();
 	$: $messages, scrollToBottom();
-	$: if ($conversations && $organisations) {
+	$: if ($conversations && $unfilteredOrganisations) {
 		if ($page.params.id) {
 			const currentConversation = $conversations.find((c) => c.id === $page.params.id);
 			if (currentConversation && currentConversation.models) {
 				selectedModel.set(currentConversation.models);
 			} else {
-				const defaultModel = $organisations
+				const defaultModel = $unfilteredOrganisations
 					.flatMap((organisations) => organisations.models)
 					.filter((model) => model.is_default);
 				if (defaultModel[0]) {
@@ -549,7 +561,7 @@
 				}
 			}
 		} else if (!$selectedModel) {
-			const defaultModel = $organisations
+			const defaultModel = $unfilteredOrganisations
 				.flatMap((organisations) => organisations.models)
 				.filter((model) => model.is_default);
 			if (defaultModel[0]) {
@@ -772,26 +784,40 @@
 				>
 				<Dropdown
 					bind:open={dropdownOpen}
+					on:show={() => searchTerm.set('')}
 					placement="bottom-start"
-					class="z-[9999] max-h-80 w-64 overflow-scroll space-y-3 p-2"
+					class="z-[9999] max-h-80 w-64 overflow-scroll space-y-3"
 					containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700"
 				>
-					{#each $organisations as organisation}
-						<div class="space-y-1">
-							<h2 class="font-bold text-sm text-zinc-400 px-2">{organisation.name}</h2>
-							<div class="">
-								{#each organisation.models as model}
-									<button
-										on:click={() => onModelSelect(model)}
-										class="text-sm px-2 hover:bg-zinc-700 w-full text-left py-1 rounded-lg {model.id ===
-										$selectedModel?.id
-											? 'bg-zinc-700'
-											: ''}">{model.name}</button
-									>
-								{/each}
+					<div class="p-3 border-b border-zinc-700">
+						<input
+							on:input={(e) => searchTerm.set(e.target.value)}
+							placeholder="Search for a model..."
+							class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm"
+						/>
+					</div>
+					{#each $filteredOrganisations as organisation}
+						{#if organisation.models.length >= 1}
+							<div class="space-y-1">
+								<h2 class="font-bold text-sm text-zinc-400 px-4">{organisation.name}</h2>
+								<div class="px-2">
+									{#each organisation.models as model}
+										<button
+											on:click={() => onModelSelect(model)}
+											class="text-sm px-2 hover:bg-zinc-700 w-full text-left py-1 rounded-lg w-full {model.id ===
+											$selectedModel?.id
+												? 'bg-zinc-700'
+												: ''}">{model.name}</button
+										>
+									{/each}
+								</div>
 							</div>
-						</div>
+						{/if}
 					{/each}
+
+					{#if $filteredOrganisations.reduce((total, org) => total + org.models.length, 0) === 0}
+						<div class="px-4 pb-2 text-sm text-zinc-200">No models found.</div>
+					{/if}
 				</Dropdown>
 			</div>
 		{/if}
