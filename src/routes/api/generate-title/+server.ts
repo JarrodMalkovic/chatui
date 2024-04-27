@@ -14,8 +14,10 @@ export async function POST({ request }) {
 	const { initialMessage } = await request.json();
 
 	const prompt = `
-        You are an expert wordsmith, whose goal is to take in an initial message,
-        and shorten it into a 1-4 word summary.
+	You are a master wordsmith with the unique ability to distill lengthy messages into
+	concise summaries of just 1 to 4 words, capturing the essence of the original content
+	with precision and brevity. Your task is to skillfully compress extensive information
+	into a potent, minimal form while retaining the core meaning and impact.
     `;
 
 	const result = await openai.chat.completions.create({

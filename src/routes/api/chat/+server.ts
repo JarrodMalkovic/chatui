@@ -1,9 +1,13 @@
 import OpenAI from 'openai';
 import { OpenAIStream, StreamingTextResponse } from 'ai';
-import { OPENAI_API_KEY } from '$env/static/private';
+import { OPENAI_API_KEY, TOGETHERAI_API_KEY } from '$env/static/private';
 
-const openai = new OpenAI({
+const openAiClient = new OpenAI({
 	apiKey: OPENAI_API_KEY
+});
+const togetherAiClient = new OpenAI({
+	apiKey: TOGETHERAI_API_KEY,
+	baseURL: 'https://api.together.xyz/v1'
 });
 
 export const config = {
@@ -11,10 +15,11 @@ export const config = {
 };
 
 export async function POST({ request }) {
-	const { messages } = await request.json();
+	const { messages, selectedModelName } = await request.json();
 
-	const stream = await openai.chat.completions.create({
-		model: 'gpt-4-vision-preview',
+	const client = selectedModelName.includes('gpt') ? openAiClient : togetherAiClient;
+	const stream = await client.chat.completions.create({
+		model: selectedModelName,
 		messages: messages.map((message) => ({
 			role: message.role,
 			content: message?.data?.imageUrl
@@ -24,6 +29,7 @@ export async function POST({ request }) {
 					]
 				: message.content
 		})),
+		max_tokens: 500,
 		stream: true
 	});
 

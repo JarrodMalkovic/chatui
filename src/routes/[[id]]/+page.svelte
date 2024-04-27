@@ -18,9 +18,11 @@
 	import MdChevronRight from 'svelte-icons/md/MdChevronRight.svelte';
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
-	import { Button, Dropdown, DropdownItem, Modal } from 'flowbite-svelte';
+	import { Dropdown, Modal } from 'flowbite-svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 
+	let dropdownOpen = false;
+	let selectedModel = writable(null);
 	let showModal = false;
 	let conversationToDelete = null;
 	let isSidebarVisible = true; // Default to visible
@@ -33,7 +35,7 @@
 	let conversations = writable<any[]>([]);
 	const { input, messages, append, setMessages, stop } = useChat({
 		sendExtraMessageFields: true,
-		onError: async () => console.log('err'),
+		onError: async () => console.error('err'),
 		onFinish: async (message) => {
 			isGenerating = false;
 			createMessage(message.content, $page.params.id, 'assistant');
@@ -107,10 +109,16 @@
 	}
 
 	let confirmNewChatModal = false; // New state for the new chat confirmation modal
-	function handleNewChat() {
+	async function handleNewChat() {
 		if ($user) {
-			// User is logged in, navigate to home
-			goto('/');
+			await goto('/');
+			await tick();
+			const defaultModel = $organisations
+				.flatMap((organisations) => organisations.models)
+				.filter((model) => model.is_default);
+			if (defaultModel[0]) {
+				selectedModel.set(defaultModel[0]);
+			}
 		} else if ($messages.length > 0) {
 			// User is logged out, show confirmation modal
 			confirmNewChatModal = true;
@@ -120,6 +128,12 @@
 	// Function to confirm new chat from modal
 	function confirmNewChat() {
 		setMessages([]); // Clear messages
+		const defaultModel = $organisations
+			.flatMap((organisations) => organisations.models)
+			.filter((model) => model.is_default);
+		if (defaultModel[0]) {
+			selectedModel.set(defaultModel[0]);
+		}
 		confirmNewChatModal = false; // Close modal
 	}
 
@@ -134,6 +148,58 @@
 
 		// Start the upload immediately
 		uploadFile(file);
+	}
+
+	function onModelSelect(model) {
+		dropdownOpen = false;
+		selectedModel.set(model);
+		if ($page.params.id) {
+			updateModelSelection($page.params.id, model);
+		}
+	}
+
+	async function updateModelSelection(conversationId, model) {
+		const { error } = await supabase
+			.from('conversations')
+			.update({ selected_model_id: model.id })
+			.eq('id', conversationId);
+
+		conversations.set(
+			$conversations.map((conversation) =>
+				conversation.id === conversationId
+					? { ...conversation, models: { ...model } }
+					: conversation
+			)
+		);
+
+		if (error) {
+			console.error('Error updating selected model:', error);
+		}
+	}
+
+	let organisations = writable<any[]>([]);
+	async function fetchModelsByOrganisation() {
+		const { data, error } = await supabase
+			.from('organisations')
+			.select(
+				`
+            name,
+            models (
+				id,
+                name,
+				internal_name,
+				is_default
+            )
+        `
+			)
+			.order('name', { foreignTable: 'models' });
+
+		if (error) {
+			console.error('error fetching data', error);
+			return [];
+		}
+
+		return organisations.set(data);
 	}
 
 	async function uploadFile(file) {
@@ -163,14 +229,22 @@
 		let message = $input;
 		isGenerating = true;
 
-		append({
-			content: message,
-			role: 'user',
-			data: {
-				imageUrl: $uploadedImageUrl, // use the URL from the uploaded image
-				imagePreviewUrl
+		append(
+			{
+				content: message,
+				role: 'user',
+				data: {
+					imageUrl: $uploadedImageUrl
+				}
+			},
+			{
+				options: {
+					body: {
+						selectedModelName: $selectedModel.internal_name
+					}
+				}
 			}
-		});
+		);
 		imagePreviewUrl = null;
 		input.set('');
 
@@ -190,7 +264,18 @@
 	async function fetchConversations() {
 		const { data, error } = await supabase
 			.from('conversations')
-			.select('*')
+			.select(
+				`
+			id,
+            title,
+            models (
+				id,
+				name,
+				internal_name
+			)
+        `
+			)
+			.order('created_at', { referencedTable: 'models' })
 			.order('created_at', { ascending: false });
 
 		if (!error) {
@@ -437,6 +522,7 @@
 	onMount(async () => {
 		container.addEventListener('scroll', handleScroll);
 		fetchConversations();
+		fetchModelsByOrganisation();
 		autoGrow();
 
 		if ($page.params.id) {
@@ -449,6 +535,28 @@
 	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
 	$: $user, fetchConversations();
 	$: $messages, scrollToBottom();
+	$: if ($conversations && $organisations) {
+		if ($page.params.id) {
+			const currentConversation = $conversations.find((c) => c.id === $page.params.id);
+			if (currentConversation && currentConversation.models) {
+				selectedModel.set(currentConversation.models);
+			} else {
+				const defaultModel = $organisations
+					.flatMap((organisations) => organisations.models)
+					.filter((model) => model.is_default);
+				if (defaultModel[0]) {
+					selectedModel.set(defaultModel[0]);
+				}
+			}
+		} else if (!$selectedModel) {
+			const defaultModel = $organisations
+				.flatMap((organisations) => organisations.models)
+				.filter((model) => model.is_default);
+			if (defaultModel[0]) {
+				selectedModel.set(defaultModel[0]);
+			}
+		}
+	}
 </script>
 
 <div
@@ -654,18 +762,39 @@
 	{/if}
 
 	<div bind:this={container} class="w-full overflow-y-scroll">
-		<div class="absolute m-2">
-			<button class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl font-semibold"
-				>ChatGPT 4 <div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
-			>
-			<Dropdown>
-				<div>test</div>
-				<DropdownItem>Dashboard</DropdownItem>
-				<DropdownItem>Settings</DropdownItem>
-				<DropdownItem>Earnings</DropdownItem>
-				<DropdownItem>Sign out</DropdownItem>
-			</Dropdown>
-		</div>
+		{#if $selectedModel}<div class="absolute m-2">
+				<button
+					data-dropdown-placement="right"
+					class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl font-semibold"
+				>
+					{$selectedModel?.name}
+					<div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
+				>
+				<Dropdown
+					bind:open={dropdownOpen}
+					placement="bottom-start"
+					class="z-[9999] max-h-80 w-64 overflow-scroll space-y-3 p-2"
+					containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700"
+				>
+					{#each $organisations as organisation}
+						<div class="space-y-1">
+							<h2 class="font-bold text-sm text-zinc-400 px-2">{organisation.name}</h2>
+							<div class="">
+								{#each organisation.models as model}
+									<button
+										on:click={() => onModelSelect(model)}
+										class="text-sm px-2 hover:bg-zinc-700 w-full text-left py-1 rounded-lg {model.id ===
+										$selectedModel?.id
+											? 'bg-zinc-700'
+											: ''}">{model.name}</button
+									>
+								{/each}
+							</div>
+						</div>
+					{/each}
+				</Dropdown>
+			</div>
+		{/if}
 		<main class="container max-w-3xl mx-auto h-screen flex flex-col">
 			{#if !$messages.length}
 				<div class="h-full flex items-center justify-center">
