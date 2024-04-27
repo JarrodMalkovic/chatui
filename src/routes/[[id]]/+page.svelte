@@ -4,7 +4,7 @@
 	import Message from '../../components/Message.svelte';
 	import { user } from '$lib/auth';
 	import { supabase, supabaseUrl } from '$lib/supabaseClient';
-	import { onMount, tick } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { derived, get, writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import MdCreate from 'svelte-icons/md/MdCreate.svelte';
@@ -18,15 +18,21 @@
 	import MdChevronRight from 'svelte-icons/md/MdChevronRight.svelte';
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
-	import { Dropdown, Modal } from 'flowbite-svelte';
+	import { Drawer, Dropdown, Modal } from 'flowbite-svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
+	import MdSearch from 'svelte-icons/md/MdSearch.svelte';
+	import { sineIn } from 'svelte/easing';
 
 	let searchTerm = writable('');
+	let messagesSearchTerm = writable('');
+	let messagesSearchResult = writable([]);
 	let dropdownOpen = false;
 	let selectedModel = writable(null);
 	let showModal = false;
 	let conversationToDelete = null;
 	let isSidebarVisible = true; // Default to visible
+	let isSearchDrawerVisible = true;
+	let currentConversation = null;
 
 	function toggleSidebar() {
 		isSidebarVisible = !isSidebarVisible;
@@ -271,6 +277,44 @@
 		$input = suggestedMessage;
 		handleSubmit();
 	}
+
+	async function fetchHighlightedMessages(searchTerm, pageNumber = 1, pageSize = 10) {
+		const pageOffset = (pageNumber - 1) * pageSize;
+
+		const { data, error } = await supabase.rpc('search_messages', {
+			term: searchTerm,
+			page_limit: pageSize,
+			page_offset: pageOffset
+		});
+		console.log({ userId: $user?.id, data });
+
+		if (error) {
+			console.error('Error fetching highlighted messages:', error);
+			return { data: [], error };
+		}
+
+		return messagesSearchResult.set(data);
+	}
+
+	function debounce(func, wait) {
+		let timeout;
+		return function (...args) {
+			const later = () => {
+				clearTimeout(timeout);
+				func(...args);
+			};
+			clearTimeout(timeout);
+			timeout = setTimeout(later, wait);
+		};
+	}
+
+	const fetchDebounced = debounce(fetchHighlightedMessages, 500);
+
+	messagesSearchTerm.subscribe(($messagesSearchTerm) => {
+		if ($messagesSearchTerm.trim() !== '') {
+			fetchDebounced($messagesSearchTerm, 1, 10);
+		}
+	});
 
 	async function fetchConversations() {
 		const { data, error } = await supabase
@@ -531,6 +575,11 @@
 		}
 	}
 
+	onDestroy(() => {
+		messagesSearchTerm.set('');
+		messagesSearchResult.set([]);
+	});
+
 	onMount(async () => {
 		container.addEventListener('scroll', handleScroll);
 		fetchConversations();
@@ -545,6 +594,7 @@
 	});
 
 	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
+	$: $page.params.id, (currentConversation = $conversations.find((c) => c.id === $page.params.id));
 	$: $user, fetchConversations();
 	$: $messages, scrollToBottom();
 	$: if ($conversations && $unfilteredOrganisations) {
@@ -654,11 +704,16 @@
 	</Modal>
 
 	{#if isSidebarVisible}
-		<div class="transition-transform duration-300 transform bg-zinc-950">
-			<div class="flex flex-col w-72 pb-4 pl-4 pr-0.5 h-screen bg-zinc-950 justify-end text-white">
-				<div class="flex-1 overflow-y-auto space-y-3 px-2 pr-4 relative overflow-x-visible">
+		<div
+			class="transition-transform duration-300 transform bg-zinc-950"
+			transition:fly={{ x: -320, duration: 200, easing: sineIn }}
+		>
+			<div class="flex flex-col w-72 pb-4 h-screen bg-zinc-950 justify-end text-white">
+				<div
+					class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-2 py-3 flex items-center h-[57px]"
+				>
 					<a
-						class="flex justify-between items-center mt-4 text-white pl-2 py-2 block text-xs hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
+						class="flex justify-between items-center text-white pl-2 py-2 block text-xs hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
 						href="/"
 						on:click|preventDefault={handleNewChat}
 					>
@@ -667,7 +722,10 @@
 							<MdCreate />
 						</div>
 					</a>
-
+				</div>
+				<div
+					class="flex-1 overflow-y-auto space-y-3 px-2 pr-4 relative overflow-x-visible pl-4 pr-0.5 pt-1"
+				>
 					{#each Object.entries($groupedConversations) as [period, convos]}
 						{#if convos.length > 0}
 							<div>
@@ -773,235 +831,304 @@
 		</div>
 	{/if}
 
-	<div bind:this={container} class="w-full overflow-y-scroll">
-		{#if $selectedModel}<div class="absolute m-2">
-				<button
-					data-dropdown-placement="right"
-					class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl font-semibold"
-				>
-					{$selectedModel?.name}
-					<div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
-				>
-				<Dropdown
-					bind:open={dropdownOpen}
-					on:show={() => searchTerm.set('')}
-					placement="bottom-start"
-					class="z-[9999] max-h-80 w-64 overflow-scroll space-y-3"
-					containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700"
-				>
-					<div class="p-3 border-b border-zinc-700">
-						<input
-							on:input={(e) => searchTerm.set(e.target.value)}
-							placeholder="Search for a model..."
-							class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm"
-						/>
-					</div>
-					{#each $filteredOrganisations as organisation}
-						{#if organisation.models.length >= 1}
-							<div class="space-y-1">
-								<h2 class="font-bold text-sm text-zinc-400 px-4">{organisation.name}</h2>
-								<div class="px-2">
-									{#each organisation.models as model}
-										<button
-											on:click={() => onModelSelect(model)}
-											class="text-sm px-2 hover:bg-zinc-700 w-full text-left py-1 rounded-lg w-full {model.id ===
-											$selectedModel?.id
-												? 'bg-zinc-700'
-												: ''}">{model.name}</button
-										>
-									{/each}
-								</div>
-							</div>
-						{/if}
-					{/each}
-
-					{#if $filteredOrganisations.reduce((total, org) => total + org.models.length, 0) === 0}
-						<div class="px-4 pb-2 text-sm text-zinc-200">No models found.</div>
-					{/if}
-				</Dropdown>
-			</div>
-		{/if}
-		<main class="container max-w-3xl mx-auto h-screen flex flex-col">
-			{#if !$messages.length}
-				<div class="h-full flex items-center justify-center">
-					<div>
-						<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
-						<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-2 gap-4 mb-2 m-6">
-					<button
-						on:click={() =>
-							handleSuggestionClick(
-								'Write a thank-you note to our babysitter for the last-minute help'
-							)}
-						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis"
-					>
-						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-							Write a thank-you note
-						</h2>
-						<h3 class="text-sm overflow-ellipsis truncate">
-							to our babysitter for the last-minute help
-						</h3>
-					</button>
-
-					<button
-						on:click={() => handleSuggestionClick('Create a charter to start a film club')}
-						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
-					>
-						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-							Create a charter
-						</h2>
-						<h3 class="text-sm overflow-ellipsis truncate">to start a film club</h3>
-					</button>
-					<button
-						on:click={() =>
-							handleSuggestionClick(
-								'Brainstorm edge cases for a function with birthday as input, horoscope as output'
-							)}
-						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
-					>
-						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-							Brainstorm edge cases
-						</h2>
-						<h3 class="text-sm overflow-ellipsis truncate">
-							for a function with birthday as input, horoscope as output
-						</h3>
-					</button>
-					<button
-						on:click={() =>
-							handleSuggestionClick('Plan a trip to explore the Madagascar wildlife on a budget')}
-						class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
-					>
-						<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">Plan a trip</h2>
-						<h3 class="text-sm overflow-ellipsis truncate">
-							to explore the Madagascar wildlife on a budget
-						</h3>
-					</button>
-				</div>
-			{:else}
-				<div class="flex-1 p-4">
-					{#each $messages as message, index}
-						<div class="mb-4">
-							{#if message.role === 'user'}
-								<Message
-									{message}
-									name={'You'}
-									isLastMessage={index === $messages.length - 1}
-									profilePicture={$user
-										? $user.profilePicture
-										: './assets/default-profile-picture.webp'}
-								/>
-							{:else}
-								<Message
-									{message}
-									name={'AI'}
-									isLastMessage={index === $messages.length - 1}
-									profilePicture={'./assets/ai-profile-picture.webp'}
-								/>
-							{/if}
+	<Drawer
+		bgColor="bg-zinc-950"
+		bgOpacity="bg-opacity-45"
+		divClass="z-50"
+		class="bg-zinc-900 border-l border-zinc-700 m-0"
+		placement="right"
+		transitionType="fly"
+		transitionParams={{
+			x: 320,
+			duration: 200,
+			easing: sineIn
+		}}
+		bind:hidden={isSearchDrawerVisible}
+	>
+		<div
+			class="border-b border-zinc-700 p-2.5 px-4 h-[57px] flex items-center sticky absolute top-0"
+		>
+			<input
+				on:input={(e) => messagesSearchTerm.set(e.target.value)}
+				placeholder="Search messages..."
+				class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm"
+			/>
+		</div>
+		<div class="space-y-4 flex flex-col p-4">
+			{#each $messagesSearchResult as messageSearchResult}
+				<a href="/{messageSearchResult?.conversation_id}">
+					<div class="bg-zinc-800 p-3 rounded-lg flex space-x-3">
+						<img class="h-8 w-8 rounded-full" src={$user.profilePicture} />
+						<div>
+							<h4 class="text-white text-sm">
+								{messageSearchResult?.conversation_title ?? 'New Chat'}
+							</h4>
+							<p class="text-white text-sm highlight">
+								{@html messageSearchResult?.highlighted_content}
+							</p>
 						</div>
-					{/each}
-				</div>
-			{/if}
-
-			<div class="sticky bottom-0">
-				{#if showScrollButton}
-					<div class="flex justify-center">
-						<button
-							on:click={onScrollToBottomButtonClick}
-							class="p-2 mb-2 w-8 h-8 rounded-full bg-zinc-700 hover:bg-zinc-800 border-1 border-zinc-400 text-white"
-							in:fly={{ y: 30, duration: 300 }}
-						>
-							<FaArrowDown />
-						</button>
-					</div>
-				{/if}
-				<div class="bg-zinc-900">
-					<form on:submit={handleSubmit} class="px-4 flex">
-						<div
-							class="m-2 w-full border border-zinc-700 focus-within:border-zinc-600 focus-within:border rounded-lg bg-zinc-800"
-						>
-							{#if imagePreviewUrl}
-								<div class="relative p-2 w-content">
-									<div class="w-fit">
-										<img src={imagePreviewUrl} alt="Preview" class="h-14 w-14 rounded-md" />
-										{#if $isUploading}
-											<div
-												class="mt-2 absolute top-0 h-14 w-14 flex justify-center items-center bg-black bg-opacity-50 rounded-md"
+					</div></a
+				>
+			{/each}
+		</div>
+	</Drawer>
+	<div class="w-full">
+		<div
+			class="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 justify-between flex shadow-lg h-[57px]"
+		>
+			{#if $selectedModel}<div class="p-2">
+					<button
+						data-dropdown-placement="right"
+						class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl font-semibold"
+					>
+						{$selectedModel?.name}
+						<div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
+					>
+					<Dropdown
+						bind:open={dropdownOpen}
+						on:show={() => searchTerm.set('')}
+						placement="bottom-start"
+						class="z-[9999] max-h-80 w-64 overflow-scroll space-y-3"
+						containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700"
+					>
+						<div class="p-3 border-b border-zinc-700">
+							<input
+								on:input={(e) => searchTerm.set(e.target.value)}
+								placeholder="Search for a model..."
+								class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm"
+							/>
+						</div>
+						{#each $filteredOrganisations as organisation}
+							{#if organisation.models.length >= 1}
+								<div class="space-y-1">
+									<h2 class="font-bold text-sm text-zinc-400 px-4">{organisation.name}</h2>
+									<div class="px-2">
+										{#each organisation.models as model}
+											<button
+												on:click={() => onModelSelect(model)}
+												class="text-sm px-2 hover:bg-zinc-700 w-full text-left py-1 rounded-lg w-full {model.id ===
+												$selectedModel?.id
+													? 'bg-zinc-700'
+													: ''}">{model.name}</button
 											>
-												<svg
-													class="animate-spin h-5 w-5 text-white"
-													xmlns="http://www.w3.org/2000/svg"
-													fill="none"
-													viewBox="0 0 24 24"
-												>
-													<circle
-														class="opacity-25"
-														cx="12"
-														cy="12"
-														r="10"
-														stroke="currentColor"
-														stroke-width="4"
-													></circle>
-													<path
-														class="opacity-75"
-														fill="currentColor"
-														d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-													></path>
-												</svg>
-											</div>
-										{/if}
-										<button
-											class="absolute top-0 left-14 p-1 w-5 h-5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 cursor-pointer"
-											on:click={removeAttachment}
-										>
-											<MdClose class="text-white" />
-										</button>
+										{/each}
 									</div>
 								</div>
 							{/if}
-							<div class="flex">
-								<input type="file" id="file" class="hidden" on:change={handleFileSelection} />
+						{/each}
 
-								<label
-									for="file"
-									class="text-zinc-300 hover:text-white font-bold text-sm rounded-lg cursor-pointer w-10 h-10 p-2"
-								>
-									<MdAttachFile />
-								</label>
-								<textarea
-									bind:value={$input}
-									bind:this={textarea}
-									on:input={autoGrow}
-									on:keydown={handleKeyDown}
-									rows="1"
-									placeholder="Message AI..."
-									class="flex-grow outline-none ring-0 bg-inherit border-0 rounded-lg focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
-								/>
-								{#if isGenerating}
-									<button
-										on:click={handleStopClick}
-										class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
-									>
-										<FaPause />
-									</button>{:else}
-									<button
-										type="submit"
-										class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
-									>
-										<MdSend />
-									</button>
+						{#if $filteredOrganisations.reduce((total, org) => total + org.models.length, 0) === 0}
+							<div class="px-4 pb-2 text-sm text-zinc-200">No models found.</div>
+						{/if}
+					</Dropdown>
+				</div>
+			{/if}
+
+			<div class="text-white text-sm font-bold min-h-full items-center flex">
+				{currentConversation
+					? currentConversation.title
+						? currentConversation.title
+						: 'New Chat'
+					: ''}
+			</div>
+			<div class="text-white font-bold min-h-full items-center flex pr-2">
+				<button
+					on:click={() => (isSearchDrawerVisible = false)}
+					class="w-10 h-10 hover:bg-zinc-700 p-2 rounded-lg border-zinc-800 border"
+					><MdSearch /></button
+				>
+			</div>
+		</div>
+
+		<div bind:this={container} class="w-full overflow-y-scroll">
+			<main class="container max-w-3xl mx-auto flex flex-col h-[calc(100vh_-_57px)]">
+				{#if !$messages.length}
+					<div class="h-full flex items-center justify-center">
+						<div>
+							<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
+							<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-2 gap-4 mb-2 m-6">
+						<button
+							on:click={() =>
+								handleSuggestionClick(
+									'Write a thank-you note to our babysitter for the last-minute help'
+								)}
+							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis"
+						>
+							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+								Write a thank-you note
+							</h2>
+							<h3 class="text-sm overflow-ellipsis truncate">
+								to our babysitter for the last-minute help
+							</h3>
+						</button>
+
+						<button
+							on:click={() => handleSuggestionClick('Create a charter to start a film club')}
+							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+						>
+							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+								Create a charter
+							</h2>
+							<h3 class="text-sm overflow-ellipsis truncate">to start a film club</h3>
+						</button>
+						<button
+							on:click={() =>
+								handleSuggestionClick(
+									'Brainstorm edge cases for a function with birthday as input, horoscope as output'
+								)}
+							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
+						>
+							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+								Brainstorm edge cases
+							</h2>
+							<h3 class="text-sm overflow-ellipsis truncate">
+								for a function with birthday as input, horoscope as output
+							</h3>
+						</button>
+						<button
+							on:click={() =>
+								handleSuggestionClick('Plan a trip to explore the Madagascar wildlife on a budget')}
+							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+						>
+							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">Plan a trip</h2>
+							<h3 class="text-sm overflow-ellipsis truncate">
+								to explore the Madagascar wildlife on a budget
+							</h3>
+						</button>
+					</div>
+				{:else}
+					<div class="flex-1 p-4">
+						{#each $messages as message, index}
+							<div class="mb-4">
+								{#if message.role === 'user'}
+									<Message
+										{message}
+										name={'You'}
+										isLastMessage={index === $messages.length - 1}
+										profilePicture={$user
+											? $user.profilePicture
+											: './assets/default-profile-picture.webp'}
+									/>
+								{:else}
+									<Message
+										{message}
+										name={'AI'}
+										isLastMessage={index === $messages.length - 1}
+										profilePicture={'./assets/ai-profile-picture.webp'}
+									/>
 								{/if}
 							</div>
+						{/each}
+					</div>
+				{/if}
+
+				<div class="sticky bottom-0">
+					{#if showScrollButton}
+						<div class="flex justify-center">
+							<button
+								on:click={onScrollToBottomButtonClick}
+								class="p-2 mb-2 w-8 h-8 rounded-full bg-zinc-700 hover:bg-zinc-800 border-1 border-zinc-400 text-white"
+								in:fly={{ y: 30, duration: 300 }}
+							>
+								<FaArrowDown />
+							</button>
 						</div>
-					</form>
-					<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
-						This is an unofficial open source UI for the OpenAI API.
-					</p>
+					{/if}
+					<div class="bg-zinc-900">
+						<form on:submit={handleSubmit} class="px-4 flex">
+							<div
+								class="m-2 w-full border border-zinc-700 focus-within:border-zinc-600 focus-within:border rounded-lg bg-zinc-800"
+							>
+								{#if imagePreviewUrl}
+									<div class="relative p-2 w-content">
+										<div class="w-fit">
+											<img src={imagePreviewUrl} alt="Preview" class="h-14 w-14 rounded-md" />
+											{#if $isUploading}
+												<div
+													class="mt-2 absolute top-0 h-14 w-14 flex justify-center items-center bg-black bg-opacity-50 rounded-md"
+												>
+													<svg
+														class="animate-spin h-5 w-5 text-white"
+														xmlns="http://www.w3.org/2000/svg"
+														fill="none"
+														viewBox="0 0 24 24"
+													>
+														<circle
+															class="opacity-25"
+															cx="12"
+															cy="12"
+															r="10"
+															stroke="currentColor"
+															stroke-width="4"
+														></circle>
+														<path
+															class="opacity-75"
+															fill="currentColor"
+															d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+														></path>
+													</svg>
+												</div>
+											{/if}
+											<button
+												class="absolute top-0 left-14 p-1 w-5 h-5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 cursor-pointer"
+												on:click={removeAttachment}
+											>
+												<MdClose class="text-white" />
+											</button>
+										</div>
+									</div>
+								{/if}
+								<div class="flex">
+									<input type="file" id="file" class="hidden" on:change={handleFileSelection} />
+
+									<label
+										for="file"
+										class="text-zinc-300 hover:text-white font-bold text-sm rounded-lg cursor-pointer w-10 h-10 p-2"
+									>
+										<MdAttachFile />
+									</label>
+									<textarea
+										bind:value={$input}
+										bind:this={textarea}
+										on:input={autoGrow}
+										on:keydown={handleKeyDown}
+										rows="1"
+										placeholder="Message AI..."
+										class="flex-grow outline-none ring-0 bg-inherit border-0 rounded-lg focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
+									/>
+									{#if isGenerating}
+										<button
+											on:click={handleStopClick}
+											class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
+										>
+											<FaPause />
+										</button>{:else}
+										<button
+											type="submit"
+											class="button text-zinc-300 hover:text-white font-bold w-10 h-10 p-2 rounded-r-lg"
+										>
+											<MdSend />
+										</button>
+									{/if}
+								</div>
+							</div>
+						</form>
+						<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
+							This is an unofficial open source UI for the OpenAI API.
+						</p>
+					</div>
 				</div>
-			</div>
-		</main>
+			</main>
+		</div>
 	</div>
 </div>
+
+<style>
+	:global(.highlight b) {
+		@apply text-zinc-700 font-normal bg-yellow-300;
+	}
+</style>
