@@ -348,16 +348,20 @@
 
 		const { data, error } = await supabase
 			.from('conversations')
-			.insert({ user_id: $user.id })
+			.insert({ user_id: $user.id, selected_model_id: $selectedModel.id })
 			.select('*');
 
 		if (data && data.length > 0) {
+			const conversation = {
+				...data[0],
+				models: $selectedModel
+			};
 			conversations.update((currentConversations) => {
-				return [data[0], ...currentConversations];
+				return [conversation, ...currentConversations];
 			});
-			goto(`/${data[0].id}`);
+			goto(`/${conversation.id}`);
 
-			return data[0].id;
+			return conversation.id;
 		} else {
 			console.error('No data returned from the insert operation');
 			return null;
@@ -713,14 +717,14 @@
 					class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-2 py-3 flex items-center h-[57px]"
 				>
 					<a
-						class="flex justify-between items-center text-white pl-2 py-2 block text-xs hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
+						class="flex items-center text-white pl-2 py-2 block hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
 						href="/"
 						on:click|preventDefault={handleNewChat}
 					>
-						New chat
 						<div class="w-4 h-4 mr-2">
 							<MdCreate />
 						</div>
+						New chat
 					</a>
 				</div>
 				<div
