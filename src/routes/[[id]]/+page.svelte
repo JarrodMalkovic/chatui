@@ -20,18 +20,15 @@
 	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
 	import { Drawer, Dropdown, Modal } from 'flowbite-svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
-	import MdSearch from 'svelte-icons/md/MdSearch.svelte';
 	import { sineIn } from 'svelte/easing';
+	import SearchMessagesSidebar from '../../components/SearchMessagesSidebar.svelte';
 
 	let searchTerm = writable('');
-	let messagesSearchTerm = writable('');
-	let messagesSearchResult = writable([]);
 	let dropdownOpen = false;
 	let selectedModel = writable(null);
 	let showModal = false;
 	let conversationToDelete = null;
 	let isSidebarVisible = true; // Default to visible
-	let isSearchDrawerVisible = true;
 	let currentConversation = null;
 
 	function toggleSidebar() {
@@ -277,44 +274,6 @@
 		$input = suggestedMessage;
 		handleSubmit();
 	}
-
-	async function fetchHighlightedMessages(searchTerm, pageNumber = 1, pageSize = 10) {
-		const pageOffset = (pageNumber - 1) * pageSize;
-
-		const { data, error } = await supabase.rpc('search_messages', {
-			term: searchTerm,
-			page_limit: pageSize,
-			page_offset: pageOffset
-		});
-		console.log({ userId: $user?.id, data });
-
-		if (error) {
-			console.error('Error fetching highlighted messages:', error);
-			return { data: [], error };
-		}
-
-		return messagesSearchResult.set(data);
-	}
-
-	function debounce(func, wait) {
-		let timeout;
-		return function (...args) {
-			const later = () => {
-				clearTimeout(timeout);
-				func(...args);
-			};
-			clearTimeout(timeout);
-			timeout = setTimeout(later, wait);
-		};
-	}
-
-	const fetchDebounced = debounce(fetchHighlightedMessages, 500);
-
-	messagesSearchTerm.subscribe(($messagesSearchTerm) => {
-		if ($messagesSearchTerm.trim() !== '') {
-			fetchDebounced($messagesSearchTerm, 1, 10);
-		}
-	});
 
 	async function fetchConversations() {
 		const { data, error } = await supabase
@@ -579,11 +538,6 @@
 		}
 	}
 
-	onDestroy(() => {
-		messagesSearchTerm.set('');
-		messagesSearchResult.set([]);
-	});
-
 	onMount(async () => {
 		container.addEventListener('scroll', handleScroll);
 		fetchConversations();
@@ -835,47 +789,6 @@
 		</div>
 	{/if}
 
-	<Drawer
-		bgColor="bg-zinc-950"
-		bgOpacity="bg-opacity-45"
-		divClass="z-50"
-		class="bg-zinc-900 border-l border-zinc-700 m-0"
-		placement="right"
-		transitionType="fly"
-		transitionParams={{
-			x: 320,
-			duration: 200,
-			easing: sineIn
-		}}
-		bind:hidden={isSearchDrawerVisible}
-	>
-		<div
-			class="border-b border-zinc-700 p-2.5 px-4 h-[57px] flex items-center sticky absolute top-0"
-		>
-			<input
-				on:input={(e) => messagesSearchTerm.set(e.target.value)}
-				placeholder="Search messages..."
-				class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm"
-			/>
-		</div>
-		<div class="space-y-4 flex flex-col p-4">
-			{#each $messagesSearchResult as messageSearchResult}
-				<a href="/{messageSearchResult?.conversation_id}">
-					<div class="bg-zinc-800 p-3 rounded-lg flex space-x-3">
-						<img class="h-8 w-8 rounded-full" src={$user.profilePicture} />
-						<div>
-							<h4 class="text-white text-sm">
-								{messageSearchResult?.conversation_title ?? 'New Chat'}
-							</h4>
-							<p class="text-white text-sm highlight">
-								{@html messageSearchResult?.highlighted_content}
-							</p>
-						</div>
-					</div></a
-				>
-			{/each}
-		</div>
-	</Drawer>
 	<div class="w-full">
 		<div
 			class="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 justify-between flex shadow-lg h-[57px]"
@@ -935,13 +848,7 @@
 						: 'New Chat'
 					: ''}
 			</div>
-			<div class="text-white font-bold min-h-full items-center flex pr-2">
-				<button
-					on:click={() => (isSearchDrawerVisible = false)}
-					class="w-10 h-10 hover:bg-zinc-700 p-2 rounded-lg border-zinc-800 border"
-					><MdSearch /></button
-				>
-			</div>
+			<SearchMessagesSidebar />
 		</div>
 
 		<div bind:this={container} class="w-full overflow-y-scroll">
