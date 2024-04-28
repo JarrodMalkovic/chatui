@@ -9,7 +9,7 @@
 
 	let messagesSearchTerm = writable('');
 	let messagesSearchResult = writable([]);
-	let isSearchDrawerHidden = false;
+	let isSearchDrawerHidden = true;
 	let currentPage = writable(1);
 	let totalPages = writable(0);
 	let totalResults = writable(null);
