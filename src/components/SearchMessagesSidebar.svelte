@@ -142,7 +142,12 @@
 			{#each $messagesSearchResult as messageSearchResult}
 				<a href="/{messageSearchResult?.conversation_id}">
 					<div class="bg-zinc-800 p-3 rounded-lg flex space-x-3">
-						<img class="h-8 w-8 rounded-full" src={$user.profilePicture} />
+						<img
+							class="h-8 w-8 rounded-full"
+							src={messageSearchResult?.role === 'user'
+								? $user?.profilePicture
+								: './assets/ai-profile-picture.webp'}
+						/>
 						<div>
 							<h4 class="text-white text-sm">
 								{messageSearchResult?.conversation_title ?? 'New Chat'}
@@ -150,6 +155,9 @@
 							<p class="text-white text-sm highlight">
 								{@html messageSearchResult?.highlighted_content}
 							</p>
+							{#if messageSearchResult.image_url}
+								<img class="w-full h-fit mt-1" src={messageSearchResult.image_url} />
+							{/if}
 						</div>
 					</div></a
 				>
