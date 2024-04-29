@@ -26,8 +26,6 @@
 			page_offset: pageOffset
 		});
 
-		console.log(data);
-
 		if (error) {
 			console.error('Error fetching highlighted messages:', error);
 			return { data: [], error };
@@ -112,7 +110,7 @@
 		<input
 			on:input={(e) => messagesSearchTerm.set(e.target.value)}
 			placeholder="Search messages..."
-			class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm"
+			class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm focus:outline-0 focus-visible:ring-0 focus:border-zinc-500"
 		/>
 	</div>
 	{#if $hasSearched && $totalResults === 0}
@@ -179,3 +177,10 @@
 		</div>
 	{/if}
 </Drawer>
+
+<style>
+	:global(.highlight b) {
+		background-color: yellow;
+		@apply text-zinc-700 font-normal;
+	}
+</style>

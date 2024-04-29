@@ -706,7 +706,7 @@
 									{#if conversation.id === conversationToRename}
 										<input
 											bind:this={renameInput}
-											class="text-white px-2 py-2 bg-transparent rounded-lg w-full text-xs bg-zinc-800"
+											class="text-white px-2 py-2 bg-transparent rounded-lg w-full text-xs bg-zinc-800 border border-zinc-700 focus:outline-0 focus-visible:ring-0 focus:border-zinc-600"
 											value={conversation.title}
 											on:focusout={handleUpdateConversationTitle}
 										/>
@@ -826,7 +826,7 @@
 							<input
 								on:input={(e) => searchTerm.set(e.target.value)}
 								placeholder="Search for a model..."
-								class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm"
+								class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm focus:outline-0 focus-visible:ring-0 focus:border-zinc-500"
 							/>
 						</div>
 						{#each $filteredOrganisations as organisation}
@@ -1076,9 +1076,3 @@
 		</div>
 	</div>
 </div>
-
-<style>
-	:global(.highlight b) {
-		@apply text-zinc-700 font-normal bg-yellow-300;
-	}
-</style>
