@@ -22,6 +22,7 @@
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 	import { sineIn } from 'svelte/easing';
 	import SearchMessagesSidebar from '../../components/SearchMessagesSidebar.svelte';
+	import { Tooltip } from 'flowbite-svelte';
 
 	let searchTerm = writable('');
 	let dropdownOpen = false;
@@ -497,6 +498,12 @@
 	}
 
 	function handleDrop(event) {
+		if ($selectedModel?.name !== 'GPT 4') {
+			event.preventDefault();
+			dragActive.set(false);
+			return;
+		}
+
 		event.preventDefault();
 		dragActive.set(false);
 		const file = event.dataTransfer.files[0]; // Assuming only one file is dropped
@@ -577,6 +584,9 @@
 			}
 		}
 	}
+	$: if ($selectedModel?.name !== 'GPT 4') {
+		removeAttachment();
+	}
 </script>
 
 <div
@@ -593,7 +603,11 @@
 		<div
 			class="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
 		>
-			<p class="text-white font-bold text-lg">Drop file to upload</p>
+			<p class="text-white font-bold text-lg">
+				{$selectedModel?.name === 'GPT-4'
+					? 'Drop file to upload'
+					: 'Images are only supported with GPT 4.'}
+			</p>
 		</div>
 	{/if}
 
@@ -854,62 +868,69 @@
 		<div bind:this={container} class="w-full overflow-y-scroll">
 			<main class="container max-w-3xl mx-auto flex flex-col h-[calc(100vh_-_57px)]">
 				{#if !$messages.length}
-					<div class="h-full flex items-center justify-center">
-						<div>
-							<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
-							<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
+					<div class="flex flex-col h-full justify-between">
+						<div class="h-full flex justify-center items-center">
+							<div>
+								<img class="mx-auto mt-28 h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
+								<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
+							</div>
 						</div>
-					</div>
+						<div class="h-auto px-2">
+							<div class="grid grid-cols-2 gap-4 mb-2 m-6">
+								<button
+									on:click={() =>
+										handleSuggestionClick(
+											'Write a thank-you note to our babysitter for the last-minute help'
+										)}
+									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis"
+								>
+									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+										Write a thank-you note
+									</h2>
+									<h3 class="text-sm overflow-ellipsis truncate">
+										to our babysitter for the last-minute help
+									</h3>
+								</button>
 
-					<div class="grid grid-cols-2 gap-4 mb-2 m-6">
-						<button
-							on:click={() =>
-								handleSuggestionClick(
-									'Write a thank-you note to our babysitter for the last-minute help'
-								)}
-							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis"
-						>
-							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-								Write a thank-you note
-							</h2>
-							<h3 class="text-sm overflow-ellipsis truncate">
-								to our babysitter for the last-minute help
-							</h3>
-						</button>
-
-						<button
-							on:click={() => handleSuggestionClick('Create a charter to start a film club')}
-							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
-						>
-							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-								Create a charter
-							</h2>
-							<h3 class="text-sm overflow-ellipsis truncate">to start a film club</h3>
-						</button>
-						<button
-							on:click={() =>
-								handleSuggestionClick(
-									'Brainstorm edge cases for a function with birthday as input, horoscope as output'
-								)}
-							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
-						>
-							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-								Brainstorm edge cases
-							</h2>
-							<h3 class="text-sm overflow-ellipsis truncate">
-								for a function with birthday as input, horoscope as output
-							</h3>
-						</button>
-						<button
-							on:click={() =>
-								handleSuggestionClick('Plan a trip to explore the Madagascar wildlife on a budget')}
-							class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
-						>
-							<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">Plan a trip</h2>
-							<h3 class="text-sm overflow-ellipsis truncate">
-								to explore the Madagascar wildlife on a budget
-							</h3>
-						</button>
+								<button
+									on:click={() => handleSuggestionClick('Create a charter to start a film club')}
+									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+								>
+									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+										Create a charter
+									</h2>
+									<h3 class="text-sm overflow-ellipsis truncate">to start a film club</h3>
+								</button>
+								<button
+									on:click={() =>
+										handleSuggestionClick(
+											'Brainstorm edge cases for a function with birthday as input, horoscope as output'
+										)}
+									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
+								>
+									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+										Brainstorm edge cases
+									</h2>
+									<h3 class="text-sm overflow-ellipsis truncate">
+										for a function with birthday as input, horoscope as output
+									</h3>
+								</button>
+								<button
+									on:click={() =>
+										handleSuggestionClick(
+											'Plan a trip to explore the Madagascar wildlife on a budget'
+										)}
+									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+								>
+									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
+										Plan a trip
+									</h2>
+									<h3 class="text-sm overflow-ellipsis truncate">
+										to explore the Madagascar wildlife on a budget
+									</h3>
+								</button>
+							</div>
+						</div>
 					</div>
 				{:else}
 					<div class="flex-1 p-4">
@@ -994,14 +1015,32 @@
 									</div>
 								{/if}
 								<div class="flex">
-									<input type="file" id="file" class="hidden" on:change={handleFileSelection} />
+									<input
+										type="file"
+										id="file"
+										class="hidden cursor-not-allowed"
+										disabled={$selectedModel?.name !== 'GPT 4'}
+										on:change={handleFileSelection}
+									/>
 
 									<label
+										id="file"
 										for="file"
-										class="text-zinc-300 hover:text-white font-bold text-sm rounded-lg cursor-pointer w-10 h-10 p-2"
+										class="text-zinc-300 hover:text-white font-bold text-sm rounded-lg cursor-pointer w-10 h-10 p-2 {$selectedModel?.name !==
+										'GPT 4'
+											? 'opacity-50 !cursor-not-allowed'
+											: ''}"
 									>
 										<MdAttachFile />
 									</label>
+									{#if $selectedModel?.name !== 'GPT 4'}
+										<Tooltip
+											type="light"
+											placement="top"
+											class="z-50 p-2 text-xs mt-1"
+											triggeredBy="#file">Images are currently only supported with GPT-4.</Tooltip
+										>
+									{/if}
 									<textarea
 										bind:value={$input}
 										bind:this={textarea}

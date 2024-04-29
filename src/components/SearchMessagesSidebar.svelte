@@ -116,12 +116,14 @@
 		/>
 	</div>
 	{#if $hasSearched && $totalResults === 0}
-		<div class="flex justify-center items-center min-h-[calc(100vh-150px)]">
-			<h2 class="text-white text-lg">No results found.</h2>
+		<div class="flex justify-center items-center min-h-[calc(100vh-150px)] px-4 text-center">
+			<h2 class="text-white text-sm">No results found.</h2>
 		</div>
 	{:else if !$hasSearched}
-		<div class="flex justify-center items-center min-h-[calc(100vh-150px)]">
-			<h2 class="text-white text-lg">Start typing to search for messages.</h2>
+		<div
+			class="flex justify-center items-center min-h-[calc(100vh-150px)] px-4 text-center text-sm"
+		>
+			<h2 class="text-white text-md">Start typing to search for messages.</h2>
 		</div>
 	{/if}
 	{#if $totalResults || $loading}
