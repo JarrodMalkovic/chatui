@@ -109,11 +109,20 @@
 	<div class="border-b border-zinc-700 p-2.5 px-4 h-[57px] flex items-center sticky absolute top-0">
 		<input
 			on:input={(e) => messagesSearchTerm.set(e.target.value)}
+			disabled={!$user}
 			placeholder="Search messages..."
-			class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm focus:outline-0 focus-visible:ring-0 focus:border-zinc-500"
+			class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm focus:outline-0 focus-visible:ring-0 focus:border-zinc-500 {!$user
+				? 'opacity-50 cursor-not-allowed'
+				: ''}"
 		/>
 	</div>
-	{#if $hasSearched && $totalResults === 0}
+	{#if !$user}
+		<div
+			class="flex justify-center items-center min-h-[calc(100vh-150px)] px-4 text-center text-sm"
+		>
+			<h2 class="text-white text-md">You must be logged in to search your messsages.</h2>
+		</div>
+	{:else if $hasSearched && $totalResults === 0}
 		<div class="flex justify-center items-center min-h-[calc(100vh-150px)] px-4 text-center">
 			<h2 class="text-white text-sm">No results found.</h2>
 		</div>

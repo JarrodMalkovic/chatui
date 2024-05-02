@@ -4,31 +4,29 @@
 	import Message from '../../components/Message.svelte';
 	import { user } from '$lib/auth';
 	import { supabase, supabaseUrl } from '$lib/supabaseClient';
-	import { onDestroy, onMount, tick } from 'svelte';
-	import { derived, get, writable } from 'svelte/store';
+	import { onMount, tick } from 'svelte';
+	import { derived, writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import MdCreate from 'svelte-icons/md/MdCreate.svelte';
-	import GoKebabHorizontal from 'svelte-icons/go/GoKebabHorizontal.svelte';
 	import FaArrowDown from 'svelte-icons/fa/FaArrowDown.svelte';
 	import { fly } from 'svelte/transition';
 	import MdAttachFile from 'svelte-icons/md/MdAttachFile.svelte';
-	import MdWarning from 'svelte-icons/md/MdWarning.svelte';
 	import MdSend from 'svelte-icons/md/MdSend.svelte';
 	import MdChevronLeft from 'svelte-icons/md/MdChevronLeft.svelte';
 	import MdChevronRight from 'svelte-icons/md/MdChevronRight.svelte';
 	import MdClose from 'svelte-icons/md/MdClose.svelte';
 	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
-	import { Drawer, Dropdown, Modal } from 'flowbite-svelte';
+	import { Dropdown, Modal } from 'flowbite-svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 	import { sineIn } from 'svelte/easing';
 	import SearchMessagesSidebar from '../../components/SearchMessagesSidebar.svelte';
 	import { Tooltip } from 'flowbite-svelte';
+	import ConversationTitle from '../../components/ConversationTitle.svelte';
 
 	let searchTerm = writable('');
 	let dropdownOpen = false;
+	let logoutDropdownOpen = false;
 	let selectedModel = writable(null);
-	let showModal = false;
-	let conversationToDelete = null;
 	let isSidebarVisible = true; // Default to visible
 	let currentConversation = null;
 
@@ -367,35 +365,6 @@
 			.select('*');
 	}
 
-	function handleDeleteClick(conversationId) {
-		conversationToDelete = conversationId;
-		showModal = true;
-	}
-
-	async function confirmDelete() {
-		showModal = false;
-		if (conversationToDelete) {
-			await deleteConversation(conversationToDelete);
-			conversationToDelete = null;
-		}
-	}
-
-	async function deleteConversation(conversationId: string) {
-		if (!$user) {
-			return;
-		}
-
-		if ($page.params.id == conversationId) {
-			goto('/');
-		}
-
-		await supabase.from('conversations').delete().eq('id', conversationId);
-
-		conversations.update((conversations) =>
-			conversations.filter((conversation) => conversation.id !== conversationId)
-		);
-	}
-
 	let container: HTMLElement;
 	async function scrollToBottom(force = true) {
 		if (!container) return;
@@ -418,20 +387,6 @@
 	function onScrollToBottomButtonClick() {
 		container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
 		showScrollButton = false;
-	}
-
-	let renameInput;
-	let conversationToRename = null;
-	function handleRenameClick(conversationId) {
-		conversationToRename = conversationId;
-		focusRenameInput();
-	}
-
-	async function focusRenameInput() {
-		await tick(); // Ensure the DOM is updated
-		if (renameInput) {
-			renameInput.focus(); // Focus the input if it exists
-		}
 	}
 
 	async function logOut() {
@@ -523,25 +478,6 @@
 		event.preventDefault();
 		if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
 			dragActive.set(false);
-		}
-	}
-
-	async function handleUpdateConversationTitle(event) {
-		event.preventDefault();
-		conversationToRename = null;
-
-		if (event.target.value) {
-			await supabase
-				.from('conversations')
-				.update({ title: event.target.value })
-				.eq('id', conversationToRename);
-			conversations.update((currentConversations) => {
-				return currentConversations.map((currentConversation) =>
-					currentConversation.id === conversationToRename
-						? { ...currentConversation, title: event.target.value }
-						: currentConversation
-				);
-			});
 		}
 	}
 
@@ -654,27 +590,6 @@
 		</div>
 	</Modal>
 
-	<Modal
-		bind:open={showModal}
-		dismissable={false}
-		outsideclose={true}
-		size="xs"
-		class="bg-zinc-800"
-		backdropClass="fixed inset-0 z-40 bg-zinc-950 bg-opacity-70"
-	>
-		<div class="mx-auto mb-4 text-white w-12 h-12"><MdWarning /></div>
-		<div class="text-center space-x-2 text-white">
-			<h3 class="mb-5 text-md font-normal">Are you sure you want to delete this conversation?</h3>
-			<button
-				class="text-sm border p-2 rounded-xl border-zinc-500"
-				on:click={() => (showModal = false)}>Cancel</button
-			>
-			<button class="text-sm p-2 rounded-xl bg-red-600 hover:bg-red-800" on:click={confirmDelete}
-				>Delete</button
-			>
-		</div>
-	</Modal>
-
 	{#if isSidebarVisible}
 		<div
 			class="transition-transform duration-300 transform bg-zinc-950"
@@ -682,7 +597,7 @@
 		>
 			<div class="flex flex-col w-72 pb-4 h-screen bg-zinc-950 justify-end text-white">
 				<div
-					class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-2 py-3 flex items-center h-[57px]"
+					class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-4 py-3 flex items-center h-[57px]"
 				>
 					<a
 						class="flex items-center text-white pl-2 py-2 block hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
@@ -703,52 +618,11 @@
 							<div>
 								<h1 class="text-xs p-2 py-2 font-bold text-zinc-400">{period}</h1>
 								{#each convos as conversation}
-									{#if conversation.id === conversationToRename}
-										<input
-											bind:this={renameInput}
-											class="text-white px-2 py-2 bg-transparent rounded-lg w-full text-xs bg-zinc-800 border border-zinc-700 focus:outline-0 focus-visible:ring-0 focus:border-zinc-600"
-											value={conversation.title}
-											on:focusout={handleUpdateConversationTitle}
-										/>
-									{:else}
-										<div
-											class="group flex pr-2 justify-between items-center block text-xs hover:bg-zinc-800 w-full rounded-lg {conversation.id ==
-											$page.params.id
-												? 'bg-zinc-900'
-												: ''}"
-										>
-											<a
-												class="text-white pl-2 py-2 text-left truncate w-full h-full"
-												href="/{conversation.id}">{conversation.title ?? 'New chat'}</a
-											>
-											<div class="dropdown dropdown-end relative">
-												<div
-													tabindex="0"
-													role="button"
-													class="relative group-hover:opacity-100 max-h-4 max-w-4 hover:text-zinc-400 {conversation.id ==
-													$page.params.id
-														? 'opacity-100'
-														: 'opacity-0'}"
-												>
-													<GoKebabHorizontal />
-												</div>
-												<ul
-													tabindex="0"
-													class="dropdown-content bg-zinc-800 border-zinc-500 border menu z-[999] p-2 shadow rounded-box w-52"
-												>
-													<li>
-														<button on:click={() => handleRenameClick(conversation.id)}>
-															Rename
-														</button>
-													</li>
-													<li>
-														<button on:click={() => handleDeleteClick(conversation.id)}>
-															Delete
-														</button>
-													</li>
-												</ul>
-											</div>
-										</div>{/if}
+									<ConversationTitle
+										isActive={conversation.id === $page.params.id}
+										{conversation}
+										{conversations}
+									/>
 								{/each}
 							</div>
 						{/if}
@@ -756,26 +630,36 @@
 				</div>
 
 				{#if $user}
-					<div class="dropdown dropdown-top">
+					<div class="px-4">
 						<div
 							tabindex="0"
 							role="button"
-							class="mt-2 hover:bg-zinc-800 p-2 flex space-x-4 rounded-lg items-center"
+							class="mt-2 hover:bg-zinc-800 p-2 flex space-x-4 rounded-lg items-center {logoutDropdownOpen
+								? 'bg-zinc-800'
+								: ''}"
 						>
 							<img class="h-8 w-8 rounded-full" src={$user.profilePicture} />
 							<div class="text-left">
 								<h2 class="text-sm">{$user.username}</h2>
 							</div>
 						</div>
-						<ul
-							tabindex="0"
-							class="dropdown-content z-[1] border border-zinc-700 menu p-2 shadow bg-zinc-800 rounded-box w-full"
+						<Dropdown
+							bind:open={logoutDropdownOpen}
+							placement="bottom-start"
+							class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
+							containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700  mt-2.5"
 						>
-							<li><button on:click={logOut}>Logout </button></li>
-						</ul>
+							<div class="p-1">
+								<button
+									on:click={logOut}
+									class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
+									>Logout
+								</button>
+							</div>
+						</Dropdown>
 					</div>
 				{:else}
-					<div class="pr-4">
+					<div class="px-4">
 						<div class="space-y-2">
 							<h1 class="font-bold text-sm">Sign up or log in</h1>
 							<p class="text-zinc-400 text-sm">
@@ -810,7 +694,7 @@
 			{#if $selectedModel}<div class="p-2">
 					<button
 						data-dropdown-placement="right"
-						class="flex items-center text-white p-2 hover:bg-zinc-800 rounded-xl font-semibold"
+						class="flex items-center text-white p-2 px-4 hover:bg-zinc-800 rounded-xl font-semibold"
 					>
 						{$selectedModel?.name}
 						<div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
@@ -819,8 +703,8 @@
 						bind:open={dropdownOpen}
 						on:show={() => searchTerm.set('')}
 						placement="bottom-start"
-						class="z-[9999] max-h-80 w-64 overflow-scroll space-y-3"
-						containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700"
+						class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
+						containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700  mt-2.5"
 					>
 						<div class="p-3 border-b border-zinc-700">
 							<input
