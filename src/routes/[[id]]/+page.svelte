@@ -22,16 +22,20 @@
 	import SearchMessagesSidebar from '../../components/SearchMessagesSidebar.svelte';
 	import { Tooltip } from 'flowbite-svelte';
 	import ConversationTitle from '../../components/ConversationTitle.svelte';
+	import { Drawer } from 'flowbite-svelte';
 
 	let searchTerm = writable('');
 	let dropdownOpen = false;
 	let logoutDropdownOpen = false;
 	let selectedModel = writable(null);
-	let isSidebarVisible = true; // Default to visible
+	let isSidebarVisible = null;
+	let isSidebarHidden = true;
 	let currentConversation = null;
+	let previousId = null;
 
 	function toggleSidebar() {
 		isSidebarVisible = !isSidebarVisible;
+		isSidebarHidden = !isSidebarHidden;
 	}
 
 	let isGenerating = false;
@@ -39,11 +43,42 @@
 	const { input, messages, append, setMessages, stop } = useChat({
 		sendExtraMessageFields: true,
 		onError: async () => console.error('err'),
+		experimental_onToolCall: async (messages, toolmessage) => {
+			switch (toolmessage[0].function.name) {
+				case 'generate_image': {
+					const args = JSON.parse(toolmessage[0].function.arguments);
+					const response = await fetch('/api/generate-image', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({ prompt: args.description })
+					});
+					const imageResponse = await response.json();
+					append(
+						{
+							role: 'tool',
+							content: imageResponse.image,
+							tool_call_id: toolmessage[0].id
+						},
+						{
+							options: {
+								body: {
+									selectedModelName: $selectedModel.internal_name
+								}
+							}
+						}
+					);
+				}
+			}
+		},
 		onFinish: async (message) => {
 			isGenerating = false;
 			createMessage(message.content, $page.params.id, 'assistant');
 
-			if ($messages.length == 2) {
+			if (
+				$messages.filter((message) => !message.tool_calls && message.role !== 'tool').length == 2
+			) {
 				const response = await fetch('/api/generate-title', {
 					method: 'POST',
 					headers: {
@@ -123,21 +158,23 @@
 				selectedModel.set(defaultModel[0]);
 			}
 		} else if ($messages.length > 0) {
-			// User is logged out, show confirmation modal
 			confirmNewChatModal = true;
 		}
 	}
 
-	// Function to confirm new chat from modal
 	function confirmNewChat() {
-		setMessages([]); // Clear messages
+		setMessages([]);
+		if (isGenerating) {
+			stop();
+			isGenerating = false;
+		}
 		const defaultModel = $unfilteredOrganisations
 			.flatMap((organisations) => organisations.models)
 			.filter((model) => model.is_default);
 		if (defaultModel[0]) {
 			selectedModel.set(defaultModel[0]);
 		}
-		confirmNewChatModal = false; // Close modal
+		confirmNewChatModal = false;
 	}
 
 	function handleFileSelection(event) {
@@ -481,7 +518,16 @@
 		}
 	}
 
+	function updateSidebarVisibility() {
+		isSidebarVisible = window.innerWidth > 768;
+		isSidebarHidden = !isSidebarVisible;
+	}
+
 	onMount(async () => {
+		await tick();
+
+		updateSidebarVisibility();
+		window.addEventListener('resize', updateSidebarVisibility);
 		container.addEventListener('scroll', handleScroll);
 		fetchConversations();
 		fetchModelsByOrganisation();
@@ -492,8 +538,20 @@
 		}
 
 		scrollToBottom(true);
+
+		return () => {
+			window.removeEventListener('resize', updateSidebarVisibility);
+			container.addEventListener('scroll', handleScroll);
+		};
 	});
 
+	$: if ($page.params.id !== previousId) {
+		if (previousId != null) {
+			stop();
+			isGenerating = false;
+		}
+		previousId = $page.params.id;
+	}
 	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
 	$: $page.params.id, (currentConversation = $conversations.find((c) => c.id === $page.params.id));
 	$: $user, fetchConversations();
@@ -548,7 +606,7 @@
 	{/if}
 
 	<button
-		class="absolute top-1/2 {isSidebarVisible
+		class="md:flex hidden absolute top-1/2 {isSidebarVisible
 			? 'left-72'
 			: 'left-0'} z-30 p-1 m-1 bg-zinc-900 rounded-full text-white hover:bg-zinc-800"
 		on:click={toggleSidebar}
@@ -590,11 +648,16 @@
 		</div>
 	</Modal>
 
-	{#if isSidebarVisible}
-		<div
-			class="transition-transform duration-300 transform bg-zinc-950"
-			transition:fly={{ x: -320, duration: 200, easing: sineIn }}
-		>
+	<div
+		class="transition-transform duration-300 transform bg-zinc-950 md:flex hidden {isSidebarVisible ==
+		null
+			? 'w-[341px]'
+			: isSidebarVisible
+				? 'translate-x-0'
+				: '-translate-x-full'}"
+		transition:fly={{ x: -320, duration: 200, easing: sineIn }}
+	>
+		{#if isSidebarVisible}
 			<div class="flex flex-col w-72 pb-4 h-screen bg-zinc-950 justify-end text-white">
 				<div
 					class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-4 py-3 flex items-center h-[57px]"
@@ -684,25 +747,150 @@
 					</div>
 				{/if}
 			</div>
+		{/if}
+	</div>
+
+	<Drawer
+		bgColor="bg-zinc-950 md:hidden flex"
+		bgOpacity="bg-opacity-45"
+		divClass="z-50  md:hidden flex"
+		class="bg-zinc-900 border-l border-zinc-700 m-0 md:hidden flex"
+		placement="left"
+		transitionType="fly"
+		transitionParams={{
+			x: -320,
+			duration: 200,
+			easing: sineIn
+		}}
+		bind:hidden={isSidebarHidden}
+	>
+		<div
+			class="flex flex-col w-full pb-4 h-screen bg-zinc-950 justify-end text-white border-r border-zinc-800"
+		>
+			<div
+				class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-4 py-3 flex items-center h-[57px]"
+			>
+				<a
+					class="flex items-center text-white pl-2 py-2 block hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
+					href="/"
+					on:click|preventDefault={handleNewChat}
+				>
+					<div class="w-4 h-4 mr-2">
+						<MdCreate />
+					</div>
+					New chat
+				</a>
+			</div>
+			<div
+				class="flex-1 overflow-y-auto space-y-3 px-2 pr-4 relative overflow-x-visible pl-4 pr-0.5 pt-1"
+			>
+				{#each Object.entries($groupedConversations) as [period, convos]}
+					{#if convos.length > 0}
+						<div>
+							<h1 class="text-xs p-2 py-2 font-bold text-zinc-400">{period}</h1>
+							{#each convos as conversation}
+								<ConversationTitle
+									isActive={conversation.id === $page.params.id}
+									{conversation}
+									{conversations}
+								/>
+							{/each}
+						</div>
+					{/if}
+				{/each}
+			</div>
+
+			{#if $user}
+				<div class="px-4">
+					<div
+						tabindex="0"
+						role="button"
+						class="mt-2 hover:bg-zinc-800 p-2 flex space-x-4 rounded-lg items-center {logoutDropdownOpen
+							? 'bg-zinc-800'
+							: ''}"
+					>
+						<img class="h-8 w-8 rounded-full" src={$user.profilePicture} />
+						<div class="text-left">
+							<h2 class="text-sm">{$user.username}</h2>
+						</div>
+					</div>
+					<Dropdown
+						bind:open={logoutDropdownOpen}
+						placement="bottom-start"
+						class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
+						containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700  mt-2.5"
+					>
+						<div class="p-1">
+							<button
+								on:click={logOut}
+								class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
+								>Logout
+							</button>
+						</div>
+					</Dropdown>
+				</div>
+			{:else}
+				<div class="px-4">
+					<div class="space-y-2">
+						<h1 class="font-bold text-sm">Sign up or log in</h1>
+						<p class="text-zinc-400 text-sm">
+							Save your chat history, share chats, and personalize your experience.
+						</p>
+					</div>
+					<div class="mt-4 space-y-2">
+						<a href="/signup" class="block">
+							<button
+								class="w-full p-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold text-sm"
+								>Sign up</button
+							>
+						</a>
+						<a href="/signin" class="block">
+							<button
+								class="w-full p-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800 border-2 border-solid rounded-lg font-bold text-sm"
+							>
+								Log in
+							</button>
+						</a>
+					</div>
+				</div>
+			{/if}
 		</div>
-	{/if}
+	</Drawer>
 
 	<div class="w-full">
 		<div
 			class="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 justify-between flex shadow-lg h-[57px]"
 		>
+			<div class="md:hidden flex text-white font-bold min-h-full items-center flex pl-2 pr-2">
+				<button
+					class="w-10 h-10 hover:bg-zinc-700 p-2 rounded-lg border-zinc-800 border"
+					on:click={toggleSidebar}
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="2"
+						stroke="currentColor"
+						class="w-6 h-6 text-white"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+					</svg>
+				</button>
+			</div>
+
 			{#if $selectedModel}<div class="p-2">
 					<button
 						data-dropdown-placement="right"
 						class="flex items-center text-white p-2 px-4 hover:bg-zinc-800 rounded-xl font-semibold"
 					>
 						{$selectedModel?.name}
-						<div class="w-4 h-4 ms-2 text-white"><GoChevronDown /></div></button
+						<div class="w-4 h-4 ml-1 mt-1 text-zinc-400"><GoChevronDown /></div></button
 					>
 					<Dropdown
 						bind:open={dropdownOpen}
 						on:show={() => searchTerm.set('')}
-						placement="bottom-start"
+						placement="bottom"
 						class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
 						containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700  mt-2.5"
 					>
@@ -738,13 +926,14 @@
 					</Dropdown>
 				</div>
 			{/if}
-
-			<div class="text-white text-sm font-bold min-h-full items-center flex">
-				{currentConversation
-					? currentConversation.title
+			<div class="md:flex hidden text-center container max-w-3xl flex justify-center">
+				<div class=" text-white text-sm font-bold min-h-full text-center items-center flex xxx">
+					{currentConversation
 						? currentConversation.title
-						: 'New Chat'
-					: ''}
+							? currentConversation.title
+							: 'New Chat'
+						: ''}
+				</div>
 			</div>
 			<SearchMessagesSidebar />
 		</div>
@@ -760,7 +949,7 @@
 							</div>
 						</div>
 						<div class="h-auto px-2">
-							<div class="grid grid-cols-2 gap-4 mb-2 m-6">
+							<div class="grid md:grid-cols-2 grid-cols-1 gap-4 mb-2 m-6">
 								<button
 									on:click={() =>
 										handleSuggestionClick(
@@ -778,7 +967,7 @@
 
 								<button
 									on:click={() => handleSuggestionClick('Create a charter to start a film club')}
-									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
 								>
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
 										Create a charter
@@ -790,7 +979,7 @@
 										handleSuggestionClick(
 											'Brainstorm edge cases for a function with birthday as input, horoscope as output'
 										)}
-									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
+									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
 								>
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
 										Brainstorm edge cases
@@ -804,7 +993,7 @@
 										handleSuggestionClick(
 											'Plan a trip to explore the Madagascar wildlife on a budget'
 										)}
-									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
 								>
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
 										Plan a trip
@@ -819,25 +1008,23 @@
 				{:else}
 					<div class="flex-1 p-4">
 						{#each $messages as message, index}
-							<div class="mb-4">
-								{#if message.role === 'user'}
-									<Message
-										{message}
-										name={'You'}
-										isLastMessage={index === $messages.length - 1}
-										profilePicture={$user
-											? $user.profilePicture
-											: './assets/default-profile-picture.webp'}
-									/>
-								{:else}
-									<Message
-										{message}
-										name={'AI'}
-										isLastMessage={index === $messages.length - 1}
-										profilePicture={'./assets/ai-profile-picture.webp'}
-									/>
-								{/if}
-							</div>
+							{#if message.role === 'user'}
+								<Message
+									{message}
+									name={'You'}
+									isLastMessage={index === $messages.length - 1}
+									profilePicture={$user
+										? $user.profilePicture
+										: './assets/default-profile-picture.webp'}
+								/>
+							{:else if message.role === 'assistant'}
+								<Message
+									{message}
+									name={'AI'}
+									isLastMessage={index === $messages.length - 1}
+									profilePicture={'./assets/ai-profile-picture.webp'}
+								/>
+							{/if}
 						{/each}
 					</div>
 				{/if}
