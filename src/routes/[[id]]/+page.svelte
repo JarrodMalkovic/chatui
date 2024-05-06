@@ -41,14 +41,14 @@
 	let isGenerating = false;
 	let conversations = writable<any[]>([]);
 	const { input, messages, append, setMessages, stop } = useChat({
-		url: 'http://localhost:5173/api/chat',
+		url: 'http://127.0.0.1:5173/api/chat',
 		sendExtraMessageFields: true,
 		onError: async () => console.error('err'),
 		experimental_onToolCall: async (messages, toolmessage) => {
 			switch (toolmessage[0].function.name) {
 				case 'generate_image': {
 					const args = JSON.parse(toolmessage[0].function.arguments);
-					const response = await fetch('http://localhost:5173/api/generate-image', {
+					const response = await fetch('http://127.0.0.1:5173/api/generate-image', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json'

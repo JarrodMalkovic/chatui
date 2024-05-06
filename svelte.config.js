@@ -1,12 +1,12 @@
 import adapterStatic from '@sveltejs/adapter-static';
-import adapterNode from '@sveltejs/adapter-node';
+import vercel from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
-const adapter = process.env.ADAPTER === 'node' ? adapterNode : adapterStatic;
+const adapter = process.env.ADAPTER === 'vercel' ? vercel : adapterStatic;
 const adapterConfig =
-	process.env.ADAPTER === 'node'
+	process.env.ADAPTER === 'vercel'
 		? {
-				out: 'build-node'
+				out: 'build-vercel'
 			}
 		: {
 				pages: 'build-static',

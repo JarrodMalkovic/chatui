@@ -132,7 +132,7 @@
 		}
 
 		loading = true;
-		fetch('http://localhost:5173/api/voice', {
+		fetch('http://127.0.0.1:5173/api/voice', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ text: message.content })
