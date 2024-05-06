@@ -1,5 +1,5 @@
 import adapterStatic from '@sveltejs/adapter-static';
-import vercel from '@sveltejs/adapter-vercel';
+import vercel from '@sveltejs/adapter-auto';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const adapter = process.env.ADAPTER === 'vercel' ? vercel : adapterStatic;
