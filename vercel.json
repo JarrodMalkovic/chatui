@@ -1,9 +1,11 @@
 {
     "builds": [
       {
+        "buildCommand": "ADAPTER=vercel vite build",
         "src": "package.json",
         "use": "@vercel/node",
-        "config": { "includeFiles": ["build-vercel/**"] }
+        "config": { "includeFiles": ["build-vercel/**"] },
+        "outputDirectory": "build-vercel"
       }
     ],
     "routes": [
