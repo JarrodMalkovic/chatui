@@ -41,20 +41,23 @@
 	let isGenerating = false;
 	let conversations = writable<any[]>([]);
 	const { input, messages, append, setMessages, stop } = useChat({
-		url: 'http://127.0.0.1:5173/api/chat',
+		api: 'https://chat-ui-git-main-jarrodmalkovics-projects.vercel.app/api/chat',
 		sendExtraMessageFields: true,
 		onError: async () => console.error('err'),
 		experimental_onToolCall: async (messages, toolmessage) => {
 			switch (toolmessage[0].function.name) {
 				case 'generate_image': {
 					const args = JSON.parse(toolmessage[0].function.arguments);
-					const response = await fetch('http://127.0.0.1:5173/api/generate-image', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({ prompt: args.description })
-					});
+					const response = await fetch(
+						'https://chat-ui-git-main-jarrodmalkovics-projects.vercel.app/api/generate-image',
+						{
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({ prompt: args.description })
+						}
+					);
 					const imageResponse = await response.json();
 					append(
 						{
