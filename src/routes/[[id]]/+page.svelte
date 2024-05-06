@@ -41,13 +41,14 @@
 	let isGenerating = false;
 	let conversations = writable<any[]>([]);
 	const { input, messages, append, setMessages, stop } = useChat({
+		url: 'http://localhost:5173/api/chat',
 		sendExtraMessageFields: true,
 		onError: async () => console.error('err'),
 		experimental_onToolCall: async (messages, toolmessage) => {
 			switch (toolmessage[0].function.name) {
 				case 'generate_image': {
 					const args = JSON.parse(toolmessage[0].function.arguments);
-					const response = await fetch('/api/generate-image', {
+					const response = await fetch('http://localhost:5173/api/generate-image', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json'
@@ -1118,7 +1119,7 @@
 										on:input={autoGrow}
 										on:keydown={handleKeyDown}
 										rows="1"
-										placeholder="Message AI..."
+										placeholder="Message AI!..."
 										class="flex-grow outline-none ring-0 bg-inherit border-0 rounded-lg focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
 									/>
 									{#if isGenerating}
