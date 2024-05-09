@@ -7,5 +7,5 @@ export default {
 	theme: {
 		extend: {}
 	},
-	plugins: [require('@tailwindcss/forms'), require('daisyui'), require('flowbite/plugin')]
+	plugins: [require('@tailwindcss/forms'), require('flowbite/plugin')]
 };

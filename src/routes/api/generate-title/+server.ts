@@ -26,6 +26,18 @@ const ratelimit = new Ratelimit({
 	limiter: Ratelimit.slidingWindow(30, '1 h')
 });
 
+const SYSTEM_PROMPT = `
+You are a master wordsmith with the unique ability to distill lengthy messages into
+concise summaries of just 1 to 4 words, capturing the essence of the original content
+with precision and brevity. Your task is to skillfully compress extensive information
+into a potent, minimal form while retaining the core meaning and impact.
+
+For some additional context, the system the original message is provided to is able to
+generate images and browse the internet.
+
+Your response should be a single line, not using any dot points.
+`;
+
 export async function POST({ request, getClientAddress }) {
 	const identifier = getClientAddress() || request.headers['user-agent'] || 'api';
 	const rateLimitResult = await ratelimit.limit(identifier);
@@ -43,24 +55,12 @@ export async function POST({ request, getClientAddress }) {
 
 	const { initialMessage } = await request.json();
 
-	const prompt = `
-	You are a master wordsmith with the unique ability to distill lengthy messages into
-	concise summaries of just 1 to 4 words, capturing the essence of the original content
-	with precision and brevity. Your task is to skillfully compress extensive information
-	into a potent, minimal form while retaining the core meaning and impact.
-
-	For some additional context, the system the original message is provided to is able to
-	generate images and browse the internet.
-
-	Your response should be a single line, not using any dot points.
-    `;
-
 	const result = await openai.chat.completions.create({
 		model: 'gpt-3.5-turbo',
 		messages: [
 			{
 				role: 'system',
-				content: prompt
+				content: SYSTEM_PROMPT
 			},
 			{
 				role: 'user',

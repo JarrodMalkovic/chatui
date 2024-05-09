@@ -3,31 +3,24 @@
 	import { useChat } from 'ai/svelte';
 	import Message from '../../components/Message.svelte';
 	import { user } from '$lib/auth';
-	import { supabase, supabaseUrl } from '$lib/supabaseClient';
+	import { supabase } from '$lib/supabaseClient';
 	import { onMount, tick } from 'svelte';
 	import { derived, writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import MdCreate from 'svelte-icons/md/MdCreate.svelte';
 	import FaArrowDown from 'svelte-icons/fa/FaArrowDown.svelte';
 	import { fly } from 'svelte/transition';
-	import MdAttachFile from 'svelte-icons/md/MdAttachFile.svelte';
 	import MdSend from 'svelte-icons/md/MdSend.svelte';
 	import MdChevronLeft from 'svelte-icons/md/MdChevronLeft.svelte';
 	import MdChevronRight from 'svelte-icons/md/MdChevronRight.svelte';
-	import MdClose from 'svelte-icons/md/MdClose.svelte';
-	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
 	import { Dropdown, Modal } from 'flowbite-svelte';
 	import FaPause from 'svelte-icons/fa/FaPause.svelte';
 	import { sineIn } from 'svelte/easing';
 	import SearchMessagesSidebar from '../../components/SearchMessagesSidebar.svelte';
-	import { Tooltip } from 'flowbite-svelte';
 	import ConversationTitle from '../../components/ConversationTitle.svelte';
 	import { Drawer } from 'flowbite-svelte';
 
-	let searchTerm = writable('');
-	let dropdownOpen = false;
 	let logoutDropdownOpen = false;
-	let selectedModel = writable(null);
 	let isSidebarVisible = null;
 	let isSidebarHidden = true;
 	let currentConversation = null;
@@ -41,38 +34,8 @@
 	let isGenerating = false;
 	let conversations = writable<any[]>([]);
 	const { input, messages, append, setMessages, stop } = useChat({
-		api: 'https://chat-ui-xi-nine.vercel.app/api/chat',
 		sendExtraMessageFields: true,
 		onError: async () => console.error('err'),
-		experimental_onToolCall: async (messages, toolmessage) => {
-			switch (toolmessage[0].function.name) {
-				case 'generate_image': {
-					const args = JSON.parse(toolmessage[0].function.arguments);
-					const response = await fetch('https://chat-ui-xi-nine.vercel.app/api/generate-image', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({ prompt: args.description })
-					});
-					const imageResponse = await response.json();
-					append(
-						{
-							role: 'tool',
-							content: imageResponse.image,
-							tool_call_id: toolmessage[0].id
-						},
-						{
-							options: {
-								body: {
-									selectedModelName: $selectedModel.internal_name
-								}
-							}
-						}
-					);
-				}
-			}
-		},
 		onFinish: async (message) => {
 			isGenerating = false;
 			createMessage(message.content, $page.params.id, 'assistant');
@@ -135,29 +98,10 @@
 		}
 	}
 
-	let selectedFile = writable(null);
-	let imagePreviewUrl = null;
-	let isUploading = writable(false); // to track upload state
-	let uploadedImageUrl = writable(null); // to store the uploaded image URL
-
-	function removeAttachment() {
-		selectedFile.set(null);
-		imagePreviewUrl = null;
-		uploadedImageUrl.set(null);
-		isUploading.set(false);
-	}
-
-	let confirmNewChatModal = false; // New state for the new chat confirmation modal
+	let confirmNewChatModal = false;
 	async function handleNewChat() {
 		if ($user) {
 			await goto('/');
-			await tick();
-			const defaultModel = $unfilteredOrganisations
-				.flatMap((organisations) => organisations.models)
-				.filter((model) => model.is_default);
-			if (defaultModel[0]) {
-				selectedModel.set(defaultModel[0]);
-			}
 		} else if ($messages.length > 0) {
 			confirmNewChatModal = true;
 		}
@@ -169,105 +113,8 @@
 			stop();
 			isGenerating = false;
 		}
-		const defaultModel = $unfilteredOrganisations
-			.flatMap((organisations) => organisations.models)
-			.filter((model) => model.is_default);
-		if (defaultModel[0]) {
-			selectedModel.set(defaultModel[0]);
-		}
+
 		confirmNewChatModal = false;
-	}
-
-	function handleFileSelection(event) {
-		const file = event.target.files[0];
-		if (!file) return;
-
-		// Update the selected file store
-		selectedFile.set(file);
-		// Generate a URL to preview the selected image
-		imagePreviewUrl = URL.createObjectURL(file);
-
-		// Start the upload immediately
-		uploadFile(file);
-	}
-
-	function onModelSelect(model) {
-		dropdownOpen = false;
-		selectedModel.set(model);
-		if ($page.params.id) {
-			updateModelSelection($page.params.id, model);
-		}
-	}
-
-	async function updateModelSelection(conversationId, model) {
-		const { error } = await supabase
-			.from('conversations')
-			.update({ selected_model_id: model.id })
-			.eq('id', conversationId);
-
-		conversations.set(
-			$conversations.map((conversation) =>
-				conversation.id === conversationId
-					? { ...conversation, models: { ...model } }
-					: conversation
-			)
-		);
-
-		if (error) {
-			console.error('Error updating selected model:', error);
-		}
-	}
-
-	let unfilteredOrganisations = writable([]);
-	let filteredOrganisations = derived(
-		[unfilteredOrganisations, searchTerm],
-		([$unfilteredOrganisations, $searchTerm]) =>
-			$unfilteredOrganisations.map((org) => ({
-				...org,
-				models: org.models.filter((model) =>
-					model.name.toLowerCase().includes($searchTerm.toLowerCase())
-				)
-			}))
-	);
-	async function fetchModelsByOrganisation() {
-		const { data, error } = await supabase
-			.from('organisations')
-			.select(
-				`
-            name,
-            models (
-				id,
-                name,
-				internal_name,
-				is_default
-            )
-        `
-			)
-			.order('name', { foreignTable: 'models' });
-
-		if (error) {
-			console.error('error fetching data', error);
-			return [];
-		}
-
-		return unfilteredOrganisations.set(data);
-	}
-
-	async function uploadFile(file) {
-		isUploading.set(true);
-		const fileExt = file.name.split('.').pop();
-		const fileName = `${Math.random().toString(36)}.${fileExt}`;
-
-		let { data, error } = await supabase.storage.from('uploads').upload(fileName, file);
-
-		isUploading.set(false);
-
-		if (error) {
-			console.error('Error uploading file:', error);
-			return;
-		}
-
-		uploadedImageUrl.set(`${supabaseUrl}/storage/v1/object/public/${data?.fullPath}`);
 	}
 
 	async function handleSubmit(e = null) {
@@ -280,31 +127,18 @@
 		let message = $input;
 		isGenerating = true;
 
-		append(
-			{
-				content: message,
-				role: 'user',
-				data: {
-					imageUrl: $uploadedImageUrl
-				}
-			},
-			{
-				options: {
-					body: {
-						selectedModelName: $selectedModel.internal_name
-					}
-				}
-			}
-		);
-		imagePreviewUrl = null;
+		append({
+			content: message,
+			role: 'user'
+		});
 		input.set('');
-
+		autoGrow();
 		if (conversationId == null && $user) {
 			conversationId = await createConversation();
 			goto(`/${conversationId}`);
 		}
 
-		createMessage(message, conversationId, 'user', $uploadedImageUrl);
+		createMessage(message, conversationId, 'user');
 	}
 
 	function handleSuggestionClick(suggestedMessage: string) {
@@ -344,16 +178,13 @@
 
 		const { data, error } = await supabase
 			.from('conversations')
-			.insert({ user_id: $user.id, selected_model_id: $selectedModel.id })
+			.insert({ user_id: $user.id })
 			.select('*');
 
 		if (data && data.length > 0) {
-			const conversation = {
-				...data[0],
-				models: $selectedModel
-			};
+			const conversation = data[0];
 			conversations.update((currentConversations) => {
-				return [conversation, ...currentConversations];
+				return [data[0], ...currentConversations];
 			});
 			goto(`/${conversation.id}`);
 
@@ -387,19 +218,14 @@
 		}
 	}
 
-	async function createMessage(
-		message: string,
-		conversationId: string,
-		role: string,
-		imageUrl?: string
-	) {
+	async function createMessage(message: string, conversationId: string, role: string) {
 		if (!$user) {
 			return;
 		}
 
 		await supabase
 			.from('messages')
-			.insert({ conversation_id: conversationId, content: message, role, image_url: imageUrl })
+			.insert({ conversation_id: conversationId, content: message, role })
 			.select('*');
 	}
 
@@ -477,45 +303,8 @@
 
 	function handleKeyDown(event) {
 		if (event.key === 'Enter' && !event.shiftKey) {
-			// Trigger on Enter unless Shift is also pressed
-			event.preventDefault(); // Prevent default Enter behavior (new line)
-			handleSubmit(event);
-		}
-	}
-
-	let dragActive = writable(false); // To track if a drag is active for visual feedback
-
-	function handleDragOver(event) {
-		event.preventDefault(); // Necessary to allow for dropping
-		dragActive.set(true);
-	}
-
-	function handleDrop(event) {
-		if ($selectedModel?.name !== 'GPT 4') {
 			event.preventDefault();
-			dragActive.set(false);
-			return;
-		}
-
-		event.preventDefault();
-		dragActive.set(false);
-		const file = event.dataTransfer.files[0]; // Assuming only one file is dropped
-		if (file) {
-			selectedFile.set(file);
-			imagePreviewUrl = URL.createObjectURL(file);
-			uploadFile(file);
-		}
-	}
-
-	function handleDragEnter(event) {
-		event.preventDefault();
-		dragActive.set(true);
-	}
-
-	function handleDragLeave(event) {
-		event.preventDefault();
-		if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
-			dragActive.set(false);
+			handleSubmit(event);
 		}
 	}
 
@@ -531,7 +320,6 @@
 		window.addEventListener('resize', updateSidebarVisibility);
 		container.addEventListener('scroll', handleScroll);
 		fetchConversations();
-		fetchModelsByOrganisation();
 		autoGrow();
 
 		if ($page.params.id) {
@@ -546,6 +334,17 @@
 		};
 	});
 
+	function portal(node, target = document.body) {
+		target.appendChild(node);
+		return {
+			destroy() {
+				if (node.parentNode === target) {
+					target.removeChild(node);
+				}
+			}
+		};
+	}
+
 	$: if ($page.params.id !== previousId) {
 		if (previousId != null) {
 			stop();
@@ -557,70 +356,14 @@
 	$: $page.params.id, (currentConversation = $conversations.find((c) => c.id === $page.params.id));
 	$: $user, fetchConversations();
 	$: $messages, scrollToBottom();
-	$: if ($conversations && $unfilteredOrganisations) {
-		if ($page.params.id) {
-			const currentConversation = $conversations.find((c) => c.id === $page.params.id);
-			if (currentConversation && currentConversation.models) {
-				selectedModel.set(currentConversation.models);
-			} else {
-				const defaultModel = $unfilteredOrganisations
-					.flatMap((organisations) => organisations.models)
-					.filter((model) => model.is_default);
-				if (defaultModel[0]) {
-					selectedModel.set(defaultModel[0]);
-				}
-			}
-		} else if (!$selectedModel) {
-			const defaultModel = $unfilteredOrganisations
-				.flatMap((organisations) => organisations.models)
-				.filter((model) => model.is_default);
-			if (defaultModel[0]) {
-				selectedModel.set(defaultModel[0]);
-			}
-		}
-	}
-	$: if ($selectedModel?.name !== 'GPT 4') {
-		removeAttachment();
-	}
 </script>
 
 <div
-	class="flex bg-zinc-900 relative"
-	on:dragover|preventDefault={handleDragOver}
-	on:drop|preventDefault={handleDrop}
-	on:dragenter|preventDefault={handleDragEnter}
-	on:dragleave|preventDefault={handleDragLeave}
-	role="dialog"
-	aria-label="Drop files here to upload"
-	tabindex="0"
+	class={confirmNewChatModal
+		? 'absolute top-0 z-[999] bg-zinc-950 bg-opacity-70 w-screen h-screen'
+		: ''}
+	use:portal
 >
-	{#if $dragActive}
-		<div
-			class="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-		>
-			<p class="text-white font-bold text-lg">
-				{$selectedModel?.name === 'GPT-4'
-					? 'Drop file to upload'
-					: 'Images are only supported with GPT 4.'}
-			</p>
-		</div>
-	{/if}
-
-	<button
-		class="md:flex hidden absolute top-1/2 {isSidebarVisible
-			? 'left-72'
-			: 'left-0'} z-30 p-1 m-1 bg-zinc-900 rounded-full text-white hover:bg-zinc-800"
-		on:click={toggleSidebar}
-	>
-		<div class="h-6 w-6">
-			{#if isSidebarVisible}
-				<MdChevronLeft />
-			{:else}
-				<MdChevronRight />
-			{/if}
-		</div>
-	</button>
-
 	<Modal
 		bind:open={confirmNewChatModal}
 		dismissable={false}
@@ -648,6 +391,23 @@
 			>
 		</div>
 	</Modal>
+</div>
+
+<div class="flex bg-zinc-900 relative">
+	<button
+		class="md:flex hidden absolute top-1/2 {isSidebarVisible
+			? 'left-72'
+			: 'left-0'} z-30 p-1 m-1 bg-zinc-900 rounded-full text-white hover:bg-zinc-800"
+		on:click={toggleSidebar}
+	>
+		<div class="h-6 w-6">
+			{#if isSidebarVisible}
+				<MdChevronLeft />
+			{:else}
+				<MdChevronRight />
+			{/if}
+		</div>
+	</button>
 
 	<div
 		class="transition-transform duration-300 transform bg-zinc-950 md:flex hidden {isSidebarVisible ==
@@ -711,8 +471,15 @@
 							bind:open={logoutDropdownOpen}
 							placement="bottom-start"
 							class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
-							containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700  mt-2.5"
+							containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700"
 						>
+							<div class="p-1">
+								<button
+									on:click={logOut}
+									class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
+									>Settings
+								</button>
+							</div>
 							<div class="p-1">
 								<button
 									on:click={logOut}
@@ -720,6 +487,7 @@
 									>Logout
 								</button>
 							</div>
+							<div class="h-0"></div>
 						</Dropdown>
 					</div>
 				{:else}
@@ -769,7 +537,7 @@
 			class="flex flex-col w-full pb-4 h-screen bg-zinc-950 justify-end text-white border-r border-zinc-800"
 		>
 			<div
-				class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-4 py-3 flex items-center h-[57px]"
+				class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-4 py-3 items-center h-[57px]"
 			>
 				<a
 					class="flex items-center text-white pl-2 py-2 block hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
@@ -862,7 +630,9 @@
 		<div
 			class="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 justify-between flex shadow-lg h-[57px]"
 		>
-			<div class="md:hidden flex text-white font-bold min-h-full items-center flex pl-2 pr-2">
+			<div
+				class="md:hidden flex absolute left-0 -top-0 text-white font-bold min-h-full items-center pl-2 pr-2"
+			>
 				<button
 					class="w-10 h-10 hover:bg-zinc-700 p-2 rounded-lg border-zinc-800 border"
 					on:click={toggleSidebar}
@@ -880,55 +650,10 @@
 				</button>
 			</div>
 
-			{#if $selectedModel}<div class="p-2">
-					<button
-						data-dropdown-placement="right"
-						class="flex items-center text-white p-2 px-4 hover:bg-zinc-800 rounded-xl font-semibold"
-					>
-						{$selectedModel?.name}
-						<div class="w-4 h-4 ml-1 mt-1 text-zinc-400"><GoChevronDown /></div></button
-					>
-					<Dropdown
-						bind:open={dropdownOpen}
-						on:show={() => searchTerm.set('')}
-						placement="bottom"
-						class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
-						containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700  mt-2.5"
-					>
-						<div class="p-3 border-b border-zinc-700">
-							<input
-								on:input={(e) => searchTerm.set(e.target.value)}
-								placeholder="Search for a model..."
-								class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm focus:outline-0 focus-visible:ring-0 focus:border-zinc-500"
-							/>
-						</div>
-						{#each $filteredOrganisations as organisation}
-							{#if organisation.models.length >= 1}
-								<div class="space-y-1">
-									<h2 class="font-bold text-sm text-zinc-400 px-4">{organisation.name}</h2>
-									<div class="px-2">
-										{#each organisation.models as model}
-											<button
-												on:click={() => onModelSelect(model)}
-												class="text-sm px-2 hover:bg-zinc-700 w-full text-left py-1 rounded-lg w-full {model.id ===
-												$selectedModel?.id
-													? 'bg-zinc-700'
-													: ''}">{model.name}</button
-											>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						{/each}
-
-						{#if $filteredOrganisations.reduce((total, org) => total + org.models.length, 0) === 0}
-							<div class="px-4 pb-2 text-sm text-zinc-200">No models found.</div>
-						{/if}
-					</Dropdown>
-				</div>
-			{/if}
-			<div class="md:flex hidden text-center container max-w-3xl flex justify-center">
-				<div class=" text-white text-sm font-bold min-h-full text-center items-center flex xxx">
+			<div class="flex-1 flex justify-center w-full">
+				<div
+					class="text-white text-sm max-w-3xl font-bold min-h-full text-center items-center flex mx-4"
+				>
 					{currentConversation
 						? currentConversation.title
 							? currentConversation.title
@@ -936,12 +661,15 @@
 						: ''}
 				</div>
 			</div>
-			<SearchMessagesSidebar />
+
+			<div class="absolute right-0 top-2">
+				<SearchMessagesSidebar />
+			</div>
 		</div>
 
 		<div bind:this={container} class="w-full overflow-y-scroll">
 			<main class="container max-w-3xl mx-auto flex flex-col h-[calc(100vh_-_57px)]">
-				{#if !$messages.length}
+				{#if !$messages.length && !isGenerating}
 					<div class="flex flex-col h-full justify-between">
 						<div class="h-full flex justify-center items-center">
 							<div>
@@ -961,7 +689,7 @@
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
 										Write a thank-you note
 									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate">
+									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
 										to our babysitter for the last-minute help
 									</h3>
 								</button>
@@ -973,7 +701,9 @@
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
 										Create a charter
 									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate">to start a film club</h3>
+									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
+										to start a film club
+									</h3>
 								</button>
 								<button
 									on:click={() =>
@@ -985,7 +715,7 @@
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
 										Brainstorm edge cases
 									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate">
+									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
 										for a function with birthday as input, horoscope as output
 									</h3>
 								</button>
@@ -999,7 +729,7 @@
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
 										Plan a trip
 									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate">
+									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
 										to explore the Madagascar wildlife on a budget
 									</h3>
 								</button>
@@ -1047,79 +777,14 @@
 							<div
 								class="m-2 w-full border border-zinc-700 focus-within:border-zinc-600 focus-within:border rounded-lg bg-zinc-800"
 							>
-								{#if imagePreviewUrl}
-									<div class="relative p-2 w-content">
-										<div class="w-fit">
-											<img src={imagePreviewUrl} alt="Preview" class="h-14 w-14 rounded-md" />
-											{#if $isUploading}
-												<div
-													class="mt-2 absolute top-0 h-14 w-14 flex justify-center items-center bg-black bg-opacity-50 rounded-md"
-												>
-													<svg
-														class="animate-spin h-5 w-5 text-white"
-														xmlns="http://www.w3.org/2000/svg"
-														fill="none"
-														viewBox="0 0 24 24"
-													>
-														<circle
-															class="opacity-25"
-															cx="12"
-															cy="12"
-															r="10"
-															stroke="currentColor"
-															stroke-width="4"
-														></circle>
-														<path
-															class="opacity-75"
-															fill="currentColor"
-															d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-														></path>
-													</svg>
-												</div>
-											{/if}
-											<button
-												class="absolute top-0 left-14 p-1 w-5 h-5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 cursor-pointer"
-												on:click={removeAttachment}
-											>
-												<MdClose class="text-white" />
-											</button>
-										</div>
-									</div>
-								{/if}
 								<div class="flex">
-									<input
-										type="file"
-										id="file"
-										class="hidden cursor-not-allowed"
-										disabled={$selectedModel?.name !== 'GPT 4'}
-										on:change={handleFileSelection}
-									/>
-
-									<label
-										id="file"
-										for="file"
-										class="text-zinc-300 hover:text-white font-bold text-sm rounded-lg cursor-pointer w-10 h-10 p-2 {$selectedModel?.name !==
-										'GPT 4'
-											? 'opacity-50 !cursor-not-allowed'
-											: ''}"
-									>
-										<MdAttachFile />
-									</label>
-									{#if $selectedModel?.name !== 'GPT 4'}
-										<Tooltip
-											type="light"
-											placement="top"
-											class="z-50 p-2 text-xs mt-1"
-											triggeredBy="#file">Images are currently only supported with GPT-4.</Tooltip
-										>
-									{/if}
 									<textarea
 										bind:value={$input}
 										bind:this={textarea}
 										on:input={autoGrow}
 										on:keydown={handleKeyDown}
 										rows="1"
-										placeholder="Message AI!..."
+										placeholder="Message AI..."
 										class="flex-grow outline-none ring-0 bg-inherit border-0 rounded-lg focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
 									/>
 									{#if isGenerating}

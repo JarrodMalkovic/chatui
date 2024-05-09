@@ -20,7 +20,6 @@ const ratelimit = new Ratelimit({
 export async function POST({ request, getClientAddress }) {
 	const identifier = getClientAddress() || request.headers['user-agent'] || 'api';
 	const rateLimitResult = await ratelimit.limit(identifier);
-
 	if (!rateLimitResult.success) {
 		return new Response(JSON.stringify({ message: 'The request has been rate limited.' }), {
 			status: 429,
@@ -53,14 +52,14 @@ export async function POST({ request, getClientAddress }) {
 		}
 	);
 
-	if (response.ok) {
-		const audioStream = await response.blob();
-		return new Response(audioStream, {
-			headers: {
-				'Content-Type': 'audio/mpeg'
-			}
-		});
-	} else {
+	if (!response.ok) {
 		return json({ error: 'Failed to generate speech' }, { status: response.status });
 	}
+
+	const audioStream = await response.blob();
+	return new Response(audioStream, {
+		headers: {
+			'Content-Type': 'audio/mpeg'
+		}
+	});
 }

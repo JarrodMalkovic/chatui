@@ -91,31 +91,30 @@
 	}
 </script>
 
-<div
-	class={showModal ? 'absolute top-0 z-[999] bg-zinc-950 bg-opacity-70 w-screen h-screen' : ''}
-	use:portal
->
-	<Modal
-		bind:open={showModal}
-		dismissable={false}
-		outsideclose={true}
-		size="xs"
-		class="bg-zinc-800"
-		backdropClass=""
-	>
-		<div class="mx-auto mb-4 text-white w-12 h-12"><MdWarning /></div>
-		<div class="text-center space-x-2 text-white">
-			<h3 class="mb-5 text-md font-normal">Are you sure you want to delete this conversation?</h3>
-			<button
-				class="text-sm border p-2 rounded-xl border-zinc-500"
-				on:click={() => (showModal = false)}>Cancel</button
-			>
-			<button class="text-sm p-2 rounded-xl bg-red-600 hover:bg-red-800" on:click={confirmDelete}
-				>Delete</button
-			>
-		</div>
-	</Modal>
-</div>
+{#if showModal}
+	<div class={'absolute top-0 z-[999] bg-zinc-950 bg-opacity-70 w-screen h-screen'} use:portal>
+		<Modal
+			bind:open={showModal}
+			dismissable={false}
+			outsideclose={true}
+			size="xs"
+			class="bg-zinc-800"
+			backdropClass=""
+		>
+			<div class="mx-auto mb-4 text-white w-12 h-12"><MdWarning /></div>
+			<div class="text-center space-x-2 text-white">
+				<h3 class="mb-5 text-md font-normal">Are you sure you want to delete this conversation?</h3>
+				<button
+					class="text-sm border p-2 rounded-xl border-zinc-500"
+					on:click={() => (showModal = false)}>Cancel</button
+				>
+				<button class="text-sm p-2 rounded-xl bg-red-600 hover:bg-red-800" on:click={confirmDelete}
+					>Delete</button
+				>
+			</div>
+		</Modal>
+	</div>
+{/if}
 
 {#if conversation.id === conversationToRename}
 	<input
@@ -124,7 +123,8 @@
 		value={conversation.title}
 		on:focusout={handleUpdateConversationTitle}
 	/>
-{:else}<div
+{:else}
+	<div
 		class="group flex pr-2 justify-between items-center text-xs hover:bg-zinc-800 w-full rounded-lg {isActive ||
 		dropdownOpen
 			? 'bg-zinc-900'
@@ -149,7 +149,7 @@
 				placement="bottom-end"
 				bind:open={dropdownOpen}
 				class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
-				containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700 ml-2.5 z-[9999] "
+				containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700 ml-2.5 mt-2.5 z-[9999] "
 			>
 				<div class="space-y-2 p-1">
 					<button

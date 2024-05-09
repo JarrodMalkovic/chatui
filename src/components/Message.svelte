@@ -132,7 +132,7 @@
 		}
 
 		loading = true;
-		fetch('https://chat-ui-xi-nine.vercel.app/api/voice', {
+		fetch('/api/voice', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ text: message.content })
