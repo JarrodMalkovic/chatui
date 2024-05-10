@@ -18,7 +18,6 @@ function normalizeUserData(user): User {
 		...user.identities?.[0]?.identity_data
 	};
 
-	console.log({ normalizedData, user });
 	if (normalizedData.avatar_url) {
 		normalizedData.profilePicture = normalizedData.avatar_url;
 	} else if (!normalizedData.profilePicture) {

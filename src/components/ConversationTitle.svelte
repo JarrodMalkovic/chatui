@@ -31,7 +31,6 @@
 
 	async function handleUpdateConversationTitle(event) {
 		event.preventDefault();
-		console.log('test');
 		if (event.target.value) {
 			await supabase
 				.from('conversations')

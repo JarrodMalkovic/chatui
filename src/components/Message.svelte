@@ -10,6 +10,7 @@
 	import 'highlight.js/styles/a11y-dark.css'; // Stylish dark theme for code blocks
 	import { Tooltip } from 'flowbite-svelte';
 	import { Spinner } from 'flowbite-svelte';
+	import { BootstrapToast, toasts } from 'svelte-toasts';
 
 	export let message: any;
 	export let name: string;
@@ -137,7 +138,13 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ text: message.content })
 		})
-			.then((response) => response.blob())
+			.then((response) => {
+				if (!response.ok) {
+					throw new Error(`HTTP error! Status: ${response.status}`);
+				}
+
+				return response.blob();
+			})
 			.then((blob) => {
 				const url = URL.createObjectURL(blob);
 				audio.src = url;
@@ -146,7 +153,12 @@
 				loading = false;
 			})
 			.catch((error) => {
-				console.error('Error:', error);
+				toasts.add({
+					placement: window.innerWidth > 768 ? 'top-right' : 'top-center',
+					type: 'error',
+					description: 'Error generating audio',
+					component: BootstrapToast
+				});
 				loading = false;
 			});
 	}
@@ -240,12 +252,6 @@
 							on:click={handleAudioPlayPause}
 						>
 							<FaPause />
-							<Tooltip
-								type="light"
-								placement="bottom"
-								class="z-50 p-2 text-xs mt-1"
-								triggeredBy="#pause-audio-button">Pause</Tooltip
-							>
 						</button>
 					{:else}
 						<button
@@ -254,12 +260,6 @@
 							on:click={handleSpeakMessageClick}
 						>
 							<GoPlay />
-							<Tooltip
-								type="light"
-								placement="bottom"
-								class="z-50 p-2 text-xs mt-1"
-								triggeredBy="#play-audio-button">Read aloud</Tooltip
-							>
 						</button>
 					{/if}
 					<button
@@ -272,12 +272,6 @@
 							<TiTick />
 						{:else}
 							<FaRegClipboard />
-							<Tooltip
-								type="light"
-								placement="bottom"
-								class="z-50 p-2 text-xs mt-1"
-								triggeredBy="#copy-to-clipboard-button">Copy</Tooltip
-							>
 						{/if}
 					</button>
 				</div>

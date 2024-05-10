@@ -59,6 +59,7 @@
 		"md5": "^2.3.0",
 		"openai": "^4.33.0",
 		"svelte-icons": "^2.1.0",
+		"svelte-toasts": "^1.1.2",
 		"tailwind-merge": "^2.3.0",
 		"zod": "^3.22.4"
 	}

@@ -68,6 +68,9 @@ dependencies:
   svelte-icons:
     specifier: ^2.1.0
     version: 2.1.0
+  svelte-toasts:
+    specifier: ^1.1.2
+    version: 1.1.2
   tailwind-merge:
     specifier: ^2.3.0
     version: 2.3.0
@@ -3651,6 +3654,10 @@ packages:
       svelte: 4.2.14
       typescript: 5.4.5
     dev: true
+
+  /svelte-toasts@1.1.2:
+    resolution: {integrity: sha512-m+yL4eEKXyJoyjTYaH1j1GFwF0Pi8YDqnVfwWPDmwi4712iZesv+TNCmToSNlav3R5Vkmc8ZBRkT8DOcu3sywQ==}
+    dev: false
 
   /svelte@4.2.14:
     resolution: {integrity: sha512-ry3+YlWqZpHxLy45MW4MZIxNdvB+Wl7p2nnstWKbOAewaJyNJuOtivSbRChcfIej6wFBjWqyKmf/NgK1uW2JAA==}

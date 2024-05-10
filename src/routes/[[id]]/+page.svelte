@@ -19,6 +19,7 @@
 	import SearchMessagesSidebar from '../../components/SearchMessagesSidebar.svelte';
 	import ConversationTitle from '../../components/ConversationTitle.svelte';
 	import { Drawer } from 'flowbite-svelte';
+	import { toasts, ToastContainer, BootstrapToast } from 'svelte-toasts';
 
 	let logoutDropdownOpen = false;
 	let isSidebarVisible = null;
@@ -33,6 +34,17 @@
 	let desktopSidebarContainer = null;
 
 	function toggleSidebar() {
+		setTimeout(() => {
+			if (mobileSidebarContainer) {
+				mobileSidebarContainer.addEventListener('scroll', handleSidebarScroll);
+			}
+		}, 0);
+		setTimeout(() => {
+			if (desktopSidebarContainer) {
+				desktopSidebarContainer.addEventListener('scroll', handleSidebarScroll);
+			}
+		}, 0);
+
 		isSidebarVisible = !isSidebarVisible;
 		isSidebarHidden = !isSidebarHidden;
 	}
@@ -41,7 +53,13 @@
 	let conversations = writable<any[]>([]);
 	const { input, messages, append, setMessages, stop } = useChat({
 		sendExtraMessageFields: true,
-		onError: async () => console.error('err'),
+		onError: async () =>
+			toasts.add({
+				placement: window.innerWidth > 768 ? 'top-right' : 'top-center',
+				type: 'error',
+				description: 'Error generating response.',
+				component: BootstrapToast
+			}),
 		onFinish: async (message) => {
 			isGenerating = false;
 			createMessage(message.content, $page.params.id, 'assistant');
@@ -152,31 +170,6 @@
 		handleSubmit();
 	}
 
-	async function fetchConversations() {
-		const { data, error } = await supabase
-			.from('conversations')
-			.select(
-				`
-			id,
-            title,
-			created_at,
-            models (
-				id,
-				name,
-				internal_name
-			)
-        `
-			)
-			.order('created_at', { referencedTable: 'models' })
-			.order('created_at', { ascending: false });
-
-		if (!error) {
-			conversations.set(data);
-		} else {
-			conversations.set([]);
-		}
-	}
-
 	async function fetchMoreConversations() {
 		if ($isFetching || $hasFetchedAllConversations) {
 			return;
@@ -256,8 +249,16 @@
 			.order('created_at', { ascending: true });
 
 		if (error) {
-			console.error('Error fetching messages:', error);
-		} else if (data) {
+			toasts.add({
+				placement: window.innerWidth > 768 ? 'top-right' : 'top-center',
+				type: 'error',
+				description: 'Error loading messages for this conversation.',
+				component: BootstrapToast
+			});
+			return;
+		}
+
+		if (data) {
 			setMessages(
 				data.map((message) => ({
 					id: message.id.toString(),
@@ -362,6 +363,17 @@
 	}
 
 	function updateSidebarVisibility() {
+		setTimeout(() => {
+			if (mobileSidebarContainer) {
+				mobileSidebarContainer.addEventListener('scroll', handleSidebarScroll);
+			}
+		}, 0);
+		setTimeout(() => {
+			if (desktopSidebarContainer) {
+				desktopSidebarContainer.addEventListener('scroll', handleSidebarScroll);
+			}
+		}, 0);
+
 		isSidebarVisible = window.innerWidth > 768;
 		isSidebarHidden = !isSidebarVisible;
 	}
@@ -373,14 +385,16 @@
 		window.addEventListener('resize', updateSidebarVisibility);
 		container.addEventListener('scroll', handleScroll);
 		autoGrow();
-		setTimeout(() => mobileSidebarContainer.addEventListener('scroll', handleSidebarScroll), 0);
-		setTimeout(() => desktopSidebarContainer.addEventListener('scroll', handleSidebarScroll), 0);
-
-		const sidebarElement = document.getElementById('sidebar');
-		console.log(sidebarElement);
-		if (sidebarElement) {
-			sidebarElement.addEventListener('scroll', handleSidebarScroll);
-		}
+		setTimeout(() => {
+			if (mobileSidebarContainer) {
+				mobileSidebarContainer.addEventListener('scroll', handleSidebarScroll);
+			}
+		}, 0);
+		setTimeout(() => {
+			if (desktopSidebarContainer) {
+				desktopSidebarContainer.addEventListener('scroll', handleSidebarScroll);
+			}
+		}, 0);
 
 		if ($page.params.id) {
 			fetchMessages($page.params.id);
@@ -414,8 +428,11 @@
 
 	$: if ($page.params.id !== previousId) {
 		if (previousId != null) {
-			stop();
-			isGenerating = false;
+			if (isGenerating) {
+				stop();
+				isGenerating = false;
+				createMessage($messages[$messages.length - 1].content, previousId, 'assistant');
+			}
 		}
 		previousId = $page.params.id;
 	}
@@ -424,6 +441,10 @@
 	$: $user, fetchMoreConversations();
 	$: $messages, scrollToBottom();
 </script>
+
+<ToastContainer {toasts} let:data>
+	<BootstrapToast {data} />
+</ToastContainer>
 
 <div
 	class={confirmNewChatModal
