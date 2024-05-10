@@ -25,6 +25,12 @@
 	let isSidebarHidden = true;
 	let currentConversation = null;
 	let previousId = null;
+	let conversationPage = 1;
+	const pageSize = 50;
+	let isFetching = writable(false);
+	let hasFetchedAllConversations = writable(false);
+	let mobileSidebarContainer = null;
+	let desktopSidebarContainer = null;
 
 	function toggleSidebar() {
 		isSidebarVisible = !isSidebarVisible;
@@ -168,6 +174,53 @@
 			conversations.set(data);
 		} else {
 			conversations.set([]);
+		}
+	}
+
+	async function fetchMoreConversations() {
+		if ($isFetching || $hasFetchedAllConversations) {
+			return;
+		}
+
+		isFetching.set(true);
+		const { data, error } = await supabase
+			.from('conversations')
+			.select(
+				`
+            id,
+            title,
+            created_at,
+            models (
+                id,
+                name,
+                internal_name
+            )
+        `
+			)
+			.order('created_at', { ascending: false })
+			.range((conversationPage - 1) * pageSize, conversationPage * pageSize - 1);
+
+		if (data?.length === 0) {
+			hasFetchedAllConversations.set(true);
+			return;
+		}
+
+		if (error) {
+			console.error('Error fetching conversations:', error);
+			return;
+		}
+
+		conversations.update((current) => [...current, ...data]);
+
+		conversationPage++;
+		isFetching.set(false);
+	}
+
+	async function handleSidebarScroll(event) {
+		const { target } = event;
+
+		if (!$isFetching && target.scrollTop + target.clientHeight >= target.scrollHeight - 100) {
+			await fetchMoreConversations();
 		}
 	}
 
@@ -319,8 +372,15 @@
 		updateSidebarVisibility();
 		window.addEventListener('resize', updateSidebarVisibility);
 		container.addEventListener('scroll', handleScroll);
-		fetchConversations();
 		autoGrow();
+		setTimeout(() => mobileSidebarContainer.addEventListener('scroll', handleSidebarScroll), 0);
+		setTimeout(() => desktopSidebarContainer.addEventListener('scroll', handleSidebarScroll), 0);
+
+		const sidebarElement = document.getElementById('sidebar');
+		console.log(sidebarElement);
+		if (sidebarElement) {
+			sidebarElement.addEventListener('scroll', handleSidebarScroll);
+		}
 
 		if ($page.params.id) {
 			fetchMessages($page.params.id);
@@ -331,6 +391,13 @@
 		return () => {
 			window.removeEventListener('resize', updateSidebarVisibility);
 			container.addEventListener('scroll', handleScroll);
+			if (mobileSidebarContainer) {
+				mobileSidebarContainer.removeEventListener('scroll', handleSidebarScroll);
+			}
+
+			if (desktopSidebarContainer) {
+				desktopSidebarContainer.removeEventListener('scroll', handleSidebarScroll);
+			}
 		};
 	});
 
@@ -354,7 +421,7 @@
 	}
 	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
 	$: $page.params.id, (currentConversation = $conversations.find((c) => c.id === $page.params.id));
-	$: $user, fetchConversations();
+	$: $user, fetchMoreConversations();
 	$: $messages, scrollToBottom();
 </script>
 
@@ -435,6 +502,7 @@
 					</a>
 				</div>
 				<div
+					bind:this={desktopSidebarContainer}
 					class="flex-1 overflow-y-auto space-y-3 px-2 pr-4 relative overflow-x-visible pl-4 pr-0.5 pt-1"
 				>
 					{#each Object.entries($groupedConversations) as [period, convos]}
@@ -551,6 +619,7 @@
 				</a>
 			</div>
 			<div
+				bind:this={mobileSidebarContainer}
 				class="flex-1 overflow-y-auto space-y-3 px-2 pr-4 relative overflow-x-visible pl-4 pr-0.5 pt-1"
 			>
 				{#each Object.entries($groupedConversations) as [period, convos]}
