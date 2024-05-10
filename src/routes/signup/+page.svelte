@@ -59,7 +59,7 @@
 		<div class="bg-zinc-800 px-6 py-12 shadow sm:rounded-lg sm:px-12">
 			<form class="space-y-6" on:submit={signUp}>
 				{#if errorMessage}
-					<div role="alert" class="alert alert-error">
+					<div role="alert" class="flex space-x-2 bg-red-500 p-2 rounded-lg border border-red-700">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="stroke-current shrink-0 h-6 w-6"
@@ -82,7 +82,6 @@
 						<input
 							id="email"
 							bind:value={email}
-							type="email"
 							autocomplete="email"
 							required
 							class="block w-full rounded-md border-0 py-1.5 bg-zinc-900 text-white shadow-sm ring-1 ring-inset ring-zinc-600 placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-purple-500 sm:text-sm sm:leading-6"
