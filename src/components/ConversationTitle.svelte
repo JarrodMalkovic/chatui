@@ -92,7 +92,7 @@
 </script>
 
 {#if showModal}
-	<div class={'absolute top-0 z-[999] bg-zinc-950 bg-opacity-70 w-screen h-svh'} use:portal>
+	<div class={'absolute top-0 z-[999] bg-zinc-950 bg-opacity-70 w-screen h-dvh'} use:portal>
 		<Modal
 			bind:open={showModal}
 			dismissable={false}

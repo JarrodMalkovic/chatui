@@ -456,7 +456,7 @@
 
 <div
 	class={confirmNewChatModal
-		? 'absolute top-0 z-[999] bg-zinc-950 bg-opacity-70 w-screen h-svh'
+		? 'absolute top-0 z-[999] bg-zinc-950 bg-opacity-70 w-screen h-dvh'
 		: ''}
 	use:portal
 >
@@ -515,7 +515,7 @@
 		transition:fly={{ x: -320, duration: 200, easing: sineIn }}
 	>
 		{#if isSidebarVisible}
-			<div class="flex flex-col w-72 pb-4 h-svh bg-zinc-950 justify-end text-white">
+			<div class="flex flex-col w-72 pb-4 h-dvh bg-zinc-950 justify-end text-white">
 				<div
 					class="sticky top-0 z-10 bg-zinc-950 shadow-xl justify-between flex px-4 py-3 flex items-center h-[57px]"
 				>
@@ -623,7 +623,7 @@
 		bind:hidden={isSidebarHidden}
 	>
 		<div
-			class="flex flex-col w-full pb-4 h-svh bg-zinc-950 justify-end text-white border-r border-zinc-800"
+			class="flex flex-col w-full pb-4 h-dvh bg-zinc-950 justify-end text-white border-r border-zinc-800"
 		>
 			<div
 				class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-4 py-3 items-center h-[57px]"
