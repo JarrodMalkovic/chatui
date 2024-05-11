@@ -21,6 +21,7 @@
 	import { Drawer } from 'flowbite-svelte';
 	import { toasts, ToastContainer, BootstrapToast } from 'svelte-toasts';
 	import { t } from 'svelte-i18n-lingui';
+	import { browser } from '$app/environment';
 
 	let logoutDropdownOpen = false;
 	let isSidebarVisible = null;
@@ -126,9 +127,6 @@
 	let confirmNewChatModal = false;
 	async function handleNewChat() {
 		if ($user) {
-			if (window.innerWidth < 768) {
-				toggleSidebar();
-			}
 			await goto('/');
 		} else if ($messages.length > 0) {
 			confirmNewChatModal = true;
@@ -442,6 +440,11 @@
 				createMessage($messages[$messages.length - 1].content, previousId, 'assistant');
 			}
 		}
+
+		if (browser && window.innerWidth < 768) {
+			toggleSidebar();
+		}
+
 		previousId = $page.params.id;
 	}
 	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
