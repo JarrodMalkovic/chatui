@@ -517,7 +517,7 @@
 		{#if isSidebarVisible}
 			<div class="flex flex-col w-72 pb-4 h-screen bg-zinc-950 justify-end text-white">
 				<div
-					class="sticky top-0 z-10 bg-zinc-950 border-b border-zinc-800 justify-between flex shadow-lg px-4 py-3 flex items-center h-[57px]"
+					class="sticky top-0 z-10 bg-zinc-950 border-b shadow-xl border-zinc-900 justify-between flex px-4 py-3 flex items-center h-[57px]"
 				>
 					<a
 						class="flex items-center text-white pl-2 py-2 block hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
@@ -527,7 +527,7 @@
 						<div class="w-4 h-4 mr-2">
 							<MdCreate />
 						</div>
-						New chat
+						{$t`New chat`}
 					</a>
 				</div>
 				<div
@@ -718,7 +718,7 @@
 
 	<div class="w-full">
 		<div
-			class="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 justify-between flex shadow-lg h-[57px]"
+			class="sticky top-0 z-10 bg-zinc-900 sm:border-0 border shadow-xl sm:shadow-none border-zinc-800 justify-between flex h-[57px]"
 		>
 			<div
 				class="md:hidden flex absolute left-0 -top-0 text-white font-bold min-h-full items-center pl-2 pr-2"
@@ -751,6 +751,18 @@
 						: ''}
 				</div>
 			</div>
+
+			{#if isSidebarVisible == false}
+				<div class="absolute left-2 top-2 hidden sm:block">
+					<a class="" href="/" on:click|preventDefault={handleNewChat}>
+						<div
+							class="w-10 h-10 hover:bg-zinc-700 p-2 rounded-lg border-zinc-800 border text-white"
+						>
+							<MdCreate />
+						</div>
+					</a>
+				</div>
+			{/if}
 
 			<div class="absolute right-0 top-2">
 				<SearchMessagesSidebar />
