@@ -489,7 +489,7 @@
 	</Modal>
 </div>
 
-<div class="flex bg-zinc-900 relative">
+<div class="flex bg-zinc-900 relative h-dvh">
 	<button
 		class="md:flex hidden absolute top-1/2 {isSidebarVisible
 			? 'left-72'
