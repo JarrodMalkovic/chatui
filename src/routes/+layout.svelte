@@ -11,9 +11,11 @@
 	async function setLocale(languageCode: string) {
 		const { messages } = await import(`../locales/${languageCode}.ts`);
 		locale.set(languageCode, messages);
+		console.log('set language to ', languageCode);
 	}
 
 	$: setLocale(data.props.preferredLocale);
 </script>
 
+<h1>{data.props.preferredLocale}</h1>
 <slot />
