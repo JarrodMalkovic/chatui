@@ -16,7 +16,7 @@
 		console.log('set language to ', languageCode);
 	}
 
-	$: if (data.props.preferredLocale && !browser) {
+	$: if (data.props.preferredLocale) {
 		setLocale(data.props.preferredLocale);
 	}
 </script>
