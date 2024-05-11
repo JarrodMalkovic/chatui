@@ -517,7 +517,7 @@
 		{#if isSidebarVisible}
 			<div class="flex flex-col w-72 pb-4 h-screen bg-zinc-950 justify-end text-white">
 				<div
-					class="sticky top-0 z-10 bg-zinc-950 border-b shadow-xl border-zinc-900 justify-between flex px-4 py-3 flex items-center h-[57px]"
+					class="sticky top-0 z-10 bg-zinc-950 shadow-xl justify-between flex px-4 py-3 flex items-center h-[57px]"
 				>
 					<a
 						class="flex items-center text-white pl-2 py-2 block hover:bg-zinc-800 w-full rounded-lg text-left font-bold"
