@@ -3,7 +3,7 @@ export async function load({ params }) {
 
 	return {
 		props: {
-			preferredLocale: preferredLocale ?? 'en'
+			preferredLocale: preferredLocale
 		}
 	};
 }
