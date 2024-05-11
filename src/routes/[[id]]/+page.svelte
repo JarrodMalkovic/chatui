@@ -470,11 +470,11 @@
 				<a class="underline" href="/signin">log in</a> to save chats.
 			</p>
 			<button
-				class="text-sm border p-2 rounded-xl border-zinc-500"
+				class="text-sm border-2 p-2 rounded-lg bg-zinc-700 hover:bg-zinc-800 border-zinc-600 font-bold"
 				on:click={() => (confirmNewChatModal = false)}>Cancel</button
 			>
 			<button
-				class="text-sm p-2 rounded-xl bg-violet-600 hover:bg-violet-800"
+				class="text-sm p-2 rounded-lg border-2 border-pink-600 hover:border-pink-800 bg-pink-600 hover:bg-pink-800 font-bold"
 				on:click={confirmNewChat}>New chat</button
 			>
 		</div>
@@ -559,16 +559,9 @@
 						<Dropdown
 							bind:open={logoutDropdownOpen}
 							placement="bottom-start"
-							class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
-							containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700"
+							class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3 "
+							containerClass="bg-zinc-800 -mt-2 rounded-xl text-white border border-zinc-700 translate-y-2 transition-all duration-300 transform ease-in-out origin-center"
 						>
-							<div class="p-1">
-								<button
-									on:click={logOut}
-									class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
-									>Settings
-								</button>
-							</div>
 							<div class="p-1">
 								<button
 									on:click={logOut}
@@ -576,7 +569,6 @@
 									>Logout
 								</button>
 							</div>
-							<div class="h-0"></div>
 						</Dropdown>
 					</div>
 				{:else}
@@ -590,7 +582,7 @@
 						<div class="mt-4 space-y-2">
 							<a href="/signup" class="block">
 								<button
-									class="w-full p-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold text-sm"
+									class="w-full p-2 bg-pink-600 hover:bg-pink-700 rounded-lg font-bold text-sm"
 									>Sign up</button
 								>
 							</a>
@@ -698,8 +690,7 @@
 					</div>
 					<div class="mt-4 space-y-2">
 						<a href="/signup" class="block">
-							<button
-								class="w-full p-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold text-sm"
+							<button class="w-full p-2 bg-pink-600 hover:bg-pink-700 rounded-lg font-bold text-sm"
 								>Sign up</button
 							>
 						</a>

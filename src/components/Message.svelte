@@ -202,7 +202,7 @@
 
 			{#if isLastMessage && message.tool_calls}
 				<div class="flex items-center space-x-2 mt-2">
-					<Spinner color="purple" size="6" />
+					<Spinner color="blue" size="6" />
 					<p class="text-zinc-200">Generating image...</p>
 				</div>
 			{/if}

@@ -148,7 +148,7 @@
 				placement="bottom-end"
 				bind:open={dropdownOpen}
 				class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
-				containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700 ml-2.5 mt-2.5 z-[9999] "
+				containerClass="flex bg-zinc-800 rounded-xl text-white border border-zinc-700 ml-2.5 mt-2.5 z-[9999] "
 			>
 				<div class="space-y-2 p-1">
 					<button

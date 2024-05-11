@@ -6,6 +6,7 @@
 	import { sineIn } from 'svelte/easing';
 	import MdSearch from 'svelte-icons/md/MdSearch.svelte';
 	import { PaginationItem } from 'flowbite-svelte';
+	import { tick } from 'svelte';
 
 	let messagesSearchTerm = writable('');
 	let messagesSearchResult = writable([]);
@@ -15,6 +16,7 @@
 	let totalResults = writable(null);
 	let loading = writable(false);
 	let hasSearched = writable(false);
+	let searchInput = null;
 
 	async function fetchHighlightedMessages(searchTerm: string, pageNumber = 1, pageSize = 10) {
 		loading.set(true);
@@ -66,6 +68,12 @@
 		}
 	});
 
+	async function handleOpenSearchDrawer() {
+		isSearchDrawerHidden = false;
+		await tick();
+		searchInput.focus();
+	}
+
 	function previous() {
 		currentPage.set($currentPage - 1);
 		fetchDebounced($messagesSearchTerm, $currentPage, 10);
@@ -88,7 +96,7 @@
 
 <div class="text-white font-bold min-h-full items-center flex pr-2">
 	<button
-		on:click={() => (isSearchDrawerHidden = false)}
+		on:click={handleOpenSearchDrawer}
 		class="w-10 h-10 hover:bg-zinc-700 p-2 rounded-lg border-zinc-800 border"><MdSearch /></button
 	>
 </div>
@@ -108,6 +116,7 @@
 >
 	<div class="border-b border-zinc-700 p-2.5 px-4 h-[57px] flex items-center sticky absolute top-0">
 		<input
+			bind:this={searchInput}
 			on:input={(e) => messagesSearchTerm.set(e.target.value)}
 			disabled={!$user}
 			placeholder="Search messages..."

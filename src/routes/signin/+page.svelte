@@ -41,14 +41,14 @@
 
 <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 bg-zinc-900 text-white">
 	<div class="sm:mx-auto sm:w-full sm:max-w-md">
-		<img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
+		<a href="/"><img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" /></a>
 		<h2 class="mt-2 text-center text-2xl font-bold leading-9 tracking-tight">
 			Sign in to your account
 		</h2>
 	</div>
 
-	<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
-		<div class="bg-zinc-800 px-6 py-12 shadow sm:rounded-lg sm:px-12">
+	<div class="sm:mt-10 mt-0 sm:mx-auto sm:w-full sm:max-w-[480px]">
+		<div class="sm:bg-zinc-800 bg-zinc-900 px-6 py-12 sm:shadow-xl sm:rounded-lg sm:px-12">
 			<form class="space-y-6" on:submit={signIn}>
 				{#if errorMessage}
 					<div role="alert" class="flex space-x-2 bg-red-500 p-2 rounded-lg border border-red-700">
@@ -76,7 +76,7 @@
 							bind:value={email}
 							autocomplete="email"
 							required
-							class="block w-full bg-zinc-900 rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-zinc-600 placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-purple-500 sm:text-sm sm:leading-6"
+							class="block w-full sm:bg-zinc-900 bg-zinc-800 rounded-md border-0 py-1.5 text-white shadow-sm ring-1 ring-inset ring-zinc-600 placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-pink-500 sm:text-sm sm:leading-6"
 						/>
 					</div>
 				</div>
@@ -90,7 +90,7 @@
 							type="password"
 							autocomplete="current-password"
 							required
-							class="block w-full rounded-md border-0 py-1.5 text-white bg-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-600 placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-purple-500 sm:text-sm sm:leading-6"
+							class="block w-full rounded-md border-0 py-1.5 text-white sm:bg-zinc-900 bg-zinc-800 shadow-sm ring-1 ring-inset ring-zinc-600 placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-pink-500 sm:text-sm sm:leading-6"
 						/>
 					</div>
 				</div>
@@ -98,7 +98,7 @@
 				<div>
 					<button
 						type="submit"
-						class="flex w-full justify-center rounded-md bg-purple-600 px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500"
+						class="flex w-full justify-center rounded-md bg-pink-600 px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm hover:bg-pink-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
 					>
 						Sign in
 					</button>
@@ -110,7 +110,7 @@
 							<div class="w-full border-t border-zinc-700"></div>
 						</div>
 						<div class="relative flex justify-center text-sm font-medium leading-6">
-							<span class="bg-zinc-800 px-6">Or continue with</span>
+							<span class="sm:bg-zinc-800 bg-zinc-900 px-6">Or continue with</span>
 						</div>
 					</div>
 
@@ -163,9 +163,9 @@
 			</form>
 		</div>
 
-		<p class="mt-10 text-center text-sm text-zinc-300">
+		<p class="sm:mt-10 text-center text-sm text-zinc-300">
 			Don't have an account?
-			<a href="/signup" class="font-semibold text-purple-600 hover:text-purple-500">Sign up</a>
+			<a href="/signup" class="font-semibold text-pink-600 hover:text-pink-500">Sign up</a>
 		</p>
 	</div>
 </div>
