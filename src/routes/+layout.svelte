@@ -10,8 +10,9 @@
 	export let data;
 
 	async function setLocale(languageCode: string) {
-		const { messages } = await import(`../locales/${languageCode}.ts`);
+		const { messages } = await import(`../locales/zh.ts`);
 		locale.set(languageCode, messages);
+		console.log('messages', messages);
 		console.log('set language to ', languageCode);
 	}
 
