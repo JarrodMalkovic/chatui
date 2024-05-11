@@ -32,10 +32,9 @@ concise summaries of just 1 to 4 words, capturing the essence of the original co
 with precision and brevity. Your task is to skillfully compress extensive information
 into a potent, minimal form while retaining the core meaning and impact.
 
-For some additional context, the system the original message is provided to is able to
-generate images and browse the internet.
-
 Your response should be a single line, not using any dot points.
+
+Your response should be in the same language as the user input.
 `;
 
 export async function POST({ request, getClientAddress }) {
