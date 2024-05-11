@@ -50,7 +50,12 @@
 
 <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 bg-zinc-900 text-white">
 	<div class="sm:mx-auto sm:w-full sm:max-w-md">
-		<a href="/"> <img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" /></a>
+		<a href="/">
+			<img
+				class="h-16 w-16 rounded-full border-2 border-zinc-700 mx-auto"
+				src="./assets/ai-profile-picture.webp"
+			/></a
+		>
 		<h2 class="mt-2 text-center text-2xl font-bold leading-9 tracking-tight">
 			{$t`Sign up for an account`}
 		</h2>

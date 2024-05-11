@@ -762,9 +762,13 @@
 				{#if !$messages.length && !isGenerating}
 					<div class="flex flex-col h-full justify-between">
 						<div class="h-full flex justify-center items-center">
-							<div class="flex flex-col items-center">
-								<h1 class="text-white text-center text-xl font-bold mt-2">
-									{$t`Ask AI Anything`}
+							<div class="flex flex-col items-center mt-24 space-y-4">
+								<img
+									class="h-16 w-16 rounded-full border-2 border-zinc-700"
+									src="./assets/ai-profile-picture.webp"
+								/>
+								<h1 class="text-white text-center text-xl font-bold">
+									{$t`Ask me anything`}
 								</h1>
 							</div>
 						</div>
