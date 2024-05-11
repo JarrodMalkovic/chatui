@@ -126,6 +126,9 @@
 	let confirmNewChatModal = false;
 	async function handleNewChat() {
 		if ($user) {
+			if (window.innerWidth < 768) {
+				toggleSidebar();
+			}
 			await goto('/');
 		} else if ($messages.length > 0) {
 			confirmNewChatModal = true;
@@ -133,6 +136,10 @@
 	}
 
 	function confirmNewChat() {
+		if (window.innerWidth < 768) {
+			toggleSidebar();
+		}
+
 		setMessages([]);
 		if (isGenerating) {
 			stop();
@@ -462,13 +469,13 @@
 		backdropClass="fixed inset-0 z-40 bg-zinc-950 bg-opacity-70"
 	>
 		<div class="text-center space-x-2 text-white space-y-3">
-			<h3 class="text-md font-bold">Start a new chat?</h3>
+			<h3 class="text-md font-bold">{$t`Start a new chat?`}</h3>
 			<p class="text-sm">
-				{$t`Your current chat will no longer be accessible.`}
-				<a class="underline" href="/signup">{$t`Sign up`}</a>
+				{$t`Your current chat will no longer be accessible. Please`}
+				<a class="underline" href="/signup">{$t`sign up`}</a>
 				{$t`or`}
 				<a class="underline" href="/signin">{$t`log in`}</a>
-				{$t`to save chats.`}
+				{$t`to save your chats.`}
 			</p>
 			<button
 				class="text-sm border-2 p-2 rounded-lg bg-zinc-700 hover:bg-zinc-800 border-zinc-600 font-bold"
@@ -577,7 +584,7 @@
 						<div class="space-y-2">
 							<h1 class="font-bold text-sm">{$t`Sign up or log in`}</h1>
 							<p class="text-zinc-400 text-sm">
-								{$t`Save your chat history, share chats, and personalize your experience.`}
+								{$t`Preserve your chat history and customize your experience.`}
 							</p>
 						</div>
 						<div class="mt-4 space-y-2">
@@ -687,7 +694,7 @@
 					<div class="space-y-2">
 						<h1 class="font-bold text-sm">{$t`Sign up or log in`}</h1>
 						<p class="text-zinc-400 text-sm">
-							{$t`Save your chat history, share chats, and personalize your experience.`}
+							{$t`Preserve your chat history and customize your experience.`}
 						</p>
 					</div>
 					<div class="mt-4 space-y-2">
@@ -755,65 +762,50 @@
 				{#if !$messages.length && !isGenerating}
 					<div class="flex flex-col h-full justify-between">
 						<div class="h-full flex justify-center items-center">
-							<div>
-								<img class="mx-auto mt-28 h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
-								<h1 class="text-white text-xl font-bold mt-2">{$t`How can I help you today?`}</h1>
+							<div class="flex flex-col items-center">
+								<h1 class="text-white text-center text-xl font-bold mt-2">
+									{$t`Ask AI Anything`}
+								</h1>
 							</div>
 						</div>
 						<div class="h-auto px-2">
-							<div class="grid md:grid-cols-2 grid-cols-1 gap-4 mb-2 m-6">
+							<div class="flex justify-center gap-4 mb-6 m-6">
 								<button
-									on:click={() =>
-										handleSuggestionClick(
-											'Write a thank-you note to our babysitter for the last-minute help'
-										)}
-									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis"
+									class="w-56 p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis bg-zinc-800 shadow-xl hover:-translate-y-2 transition-transform duration-300"
+									on:click={() => handleSuggestionClick('Write a thank-you note to our babysitter')}
 								>
-									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										{$t`Write a thank-you note`}
+									<img class="mb-2" src="./assets/babysitter-letter-suggestion.webp" />
+									<h2 class="font-bold text-zinc-400 text-sm overflow-ellipsis truncate">
+										{$t`Help`}
 									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										{$t`to our babysitter for the last-minute help`}
+									<h3 class="font-bold text-md text-white">
+										{$t`Write a thank-you note to our babysitter`}
 									</h3>
 								</button>
 
 								<button
-									on:click={() => handleSuggestionClick('Create a charter to start a film club')}
-									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
+									class="md:block hidden w-56 p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis bg-zinc-800 shadow-xl hover:-translate-y-2 transition-transform duration-300"
+									on:click={() => handleSuggestionClick('Simulate a mock interview')}
 								>
-									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										{$t`Create a charter`}
+									<img class="mb-2" src="./assets/explore-madagascar-suggestion.webp" />
+									<h2 class="font-bold text-zinc-400 text-sm overflow-ellipsis truncate">
+										{$t`Learn`}
 									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										{$t`to start a film club`}
+									<h3 class="font-bold text-md text-white">
+										{$t`Simulate a mock interview`}
 									</h3>
 								</button>
+
 								<button
-									on:click={() =>
-										handleSuggestionClick(
-											'Brainstorm edge cases for a function with birthday as input, horoscope as output'
-										)}
-									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
+									class="lg:block hidden w-56 p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis bg-zinc-800 shadow-xl hover:-translate-y-2 transition-transform duration-300"
+									on:click={() => handleSuggestionClick('Plan a trip to explore Madagascar')}
 								>
-									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										{$t`Brainstorm edge cases`}
+									<img class="mb-2" src="./assets/mock-interview-suggestion.webp" />
+									<h2 class="font-bold text-zinc-400 text-sm overflow-ellipsis truncate">
+										{$t`Fun`}
 									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										{$t`for a function with birthday as input, horoscope as output`}
-									</h3>
-								</button>
-								<button
-									on:click={() =>
-										handleSuggestionClick(
-											'Plan a trip to explore the Madagascar wildlife on a budget'
-										)}
-									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
-								>
-									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										{$t`Plan a trip`}
-									</h2>
-									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										{$t`to explore the Madagascar wildlife on a budget`}
+									<h3 class="font-bold text-md text-white">
+										{$t`Plan a trip to explore Madagascar`}
 									</h3>
 								</button>
 							</div>
@@ -867,7 +859,7 @@
 										on:input={autoGrow}
 										on:keydown={handleKeyDown}
 										rows="1"
-										placeholder="Message AI..."
+										placeholder="Ask AI anything..."
 										class="flex-grow outline-none ring-0 bg-inherit border-0 rounded-lg focus-visible:ring-0 visible:ring-0 text-white transition-all resize-none focus:outline-none overflow-hidden"
 									/>
 									{#if isGenerating}
@@ -888,7 +880,7 @@
 							</div>
 						</form>
 						<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
-							{$t`This is an unofficial open source UI for the OpenAI API.`}
+							{$t`Messages are AI-generated and may contain inaccuracies or inappropriate content.`}
 						</p>
 					</div>
 				</div>
