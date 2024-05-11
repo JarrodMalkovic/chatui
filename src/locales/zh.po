@@ -81,11 +81,11 @@ msgstr ""
 #: src/routes/[[id]]/+page.svelte:413
 #: src/routes/[[id]]/+page.svelte:566
 msgid "New chat"
-msgstr ""
+msgstr "New Chat!!!"
 
 #: src/routes/[[id]]/+page.svelte:677
 msgid "New Chat"
-msgstr ""
+msgstr "New Chat!!!"
 
 #: src/components/SearchMessagesSidebar.svelte:194
 msgid "Next"
