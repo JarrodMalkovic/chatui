@@ -22,3 +22,14 @@
 </script>
 
 <slot />
+
+<style>
+	:global(html),
+	:global(body) {
+		height: 100%;
+		margin: 0;
+	}
+	:global(#svelte) {
+		height: 100%;
+	}
+</style>
