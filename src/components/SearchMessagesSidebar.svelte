@@ -8,6 +8,8 @@
 	import { PaginationItem } from 'flowbite-svelte';
 	import { tick } from 'svelte';
 	import { t, plural } from 'svelte-i18n-lingui';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 
 	let messagesSearchTerm = writable('');
 	let messagesSearchResult = writable([]);
@@ -18,6 +20,7 @@
 	let loading = writable(false);
 	let hasSearched = writable(false);
 	let searchInput = null;
+	let previousId = null;
 
 	async function fetchHighlightedMessages(searchTerm: string, pageNumber = 1, pageSize = 10) {
 		loading.set(true);
@@ -83,6 +86,11 @@
 	function next() {
 		currentPage.set($currentPage + 1);
 		fetchDebounced($messagesSearchTerm, $currentPage, 10);
+	}
+
+	async function handleConversationClick(conversationId) {
+		await goto(`/${conversationId}`);
+		isSearchDrawerHidden = true;
 	}
 
 	$: if (isSearchDrawerHidden) {
@@ -164,7 +172,11 @@
 	>
 		{#if !$loading}
 			{#each $messagesSearchResult as messageSearchResult}
-				<a href="/{messageSearchResult?.conversation_id}">
+				<a
+					href="/{messageSearchResult?.conversation_id}"
+					on:click|preventDefault={() =>
+						handleConversationClick(messageSearchResult?.conversation_id)}
+				>
 					<div class="bg-zinc-800 p-3 rounded-lg flex space-x-3">
 						<img
 							class="h-8 w-8 rounded-full"
