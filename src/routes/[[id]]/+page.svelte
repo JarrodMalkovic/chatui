@@ -791,7 +791,7 @@
 									class="md:block hidden w-56 p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis bg-zinc-800 shadow-xl hover:-translate-y-2 transition-transform duration-300"
 									on:click={() => handleSuggestionClick('Simulate a mock interview')}
 								>
-									<img class="mb-2" src="./assets/explore-madagascar-suggestion.webp" />
+									<img class="mb-2" src="./assets/mock-interview-suggestion.webp" />
 									<h2 class="font-bold text-zinc-400 text-sm overflow-ellipsis truncate">
 										{$t`Learn`}
 									</h2>
@@ -804,7 +804,7 @@
 									class="lg:block hidden w-56 p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis bg-zinc-800 shadow-xl hover:-translate-y-2 transition-transform duration-300"
 									on:click={() => handleSuggestionClick('Plan a trip to explore Madagascar')}
 								>
-									<img class="mb-2" src="./assets/mock-interview-suggestion.webp" />
+									<img class="mb-2" src="./assets/explore-madagascar-suggestion.webp" />
 									<h2 class="font-bold text-zinc-400 text-sm overflow-ellipsis truncate">
 										{$t`Fun`}
 									</h2>
