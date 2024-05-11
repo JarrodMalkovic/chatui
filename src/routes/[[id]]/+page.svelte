@@ -770,7 +770,7 @@
 		</div>
 
 		<div bind:this={container} class="w-full overflow-y-scroll">
-			<main class="container max-w-3xl mx-auto flex flex-col h-[calc(100vh_-_57px)]">
+			<main class="container max-w-3xl mx-auto flex flex-col h-[calc(100dvh_-_57px)]">
 				{#if !$messages.length && !isGenerating}
 					<div class="flex flex-col h-full justify-between">
 						<div class="h-full flex justify-center items-center">
