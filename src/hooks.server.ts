@@ -1,6 +1,7 @@
 import { supabase } from '$lib/supabaseClient';
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
+import { negotiateLanguages } from '@fluent/langneg';
 
 const handleAuth = async ({ event, resolve }) => {
 	const token = event.request.headers.get('authorization')?.split(' ')[1];
@@ -40,4 +41,19 @@ const handleCORS: Handle = async ({ event, resolve }) => {
 
 	return response;
 };
-export const handle = sequence(handleAuth, handleCORS);
+
+const handleInitialLanguage: Handle = async ({ event, resolve }) => {
+	const supportedLocales = ['en', 'zh'];
+	const acceptLangHeader = event.request.headers.get('Accept-Language') || 'en';
+	const preferredLocale = negotiateLanguages(
+		acceptLangHeader.split(',').map((lang) => lang.split(';')[0]),
+		supportedLocales,
+		{ defaultLocale: 'en' }
+	)[0];
+
+	event.params['preferredLocale'] = preferredLocale;
+
+	return resolve(event);
+};
+
+export const handle = sequence(handleAuth, handleCORS, handleInitialLanguage);

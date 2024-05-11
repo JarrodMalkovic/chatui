@@ -190,113 +190,92 @@
 	}
 </script>
 
-{#if (message.tool_calls && isLastMessage) || !message.tool_calls}
-	<div class="flex space-x-2 group mb-4">
-		<img
-			class="h-10 w-10 rounded-full object-cover"
-			src={profilePicture}
-			alt={`Image of ${name}`}
-		/>
-		<div>
-			<div class="text-white font-bold text-sm">{name}</div>
-
-			{#if isLastMessage && message.tool_calls}
-				<div class="flex items-center space-x-2 mt-2">
-					<Spinner color="blue" size="6" />
-					<p class="text-zinc-200">Generating image...</p>
-				</div>
+<div class="flex space-x-2 group mb-4">
+	<img class="h-10 w-10 rounded-full object-cover" src={profilePicture} alt={`Image of ${name}`} />
+	<div>
+		<div class="text-white font-bold text-sm">{name}</div>
+		<div class="text-white text-sm space-y-3">
+			{#if message?.data?.imageUrl}
+				<img
+					class="mt-3 cursor-pointer w-96"
+					src={message.data.imageUrl}
+					alt="Message image"
+					on:click={() => (isOverlayVisible = true)}
+				/>
 			{/if}
+			{@html formattedMessage}
+		</div>
 
-			<div class="text-white text-sm space-y-3">
-				{#if message?.data?.imageUrl}
-					<img
-						class="mt-3 cursor-pointer w-96"
-						src={message.data.imageUrl}
-						alt="Message image"
-						on:click={() => (isOverlayVisible = true)}
-					/>
-				{/if}
-				{@html formattedMessage}
-			</div>
-			{#if !message.tool_calls}
-				<div
-					class="mt-2 space-x-1.5 flex items-center {isLastMessage && !message.tool_calls
-						? ''
-						: 'invisible group-hover:visible'}"
+		<div
+			class="mt-2 space-x-1.5 flex items-center {isLastMessage && !message.tool_calls
+				? ''
+				: 'invisible group-hover:visible'}"
+		>
+			{#if loading}
+				<svg
+					class="animate-spin h-4 w-4 text-white"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
 				>
-					{#if loading}
-						<svg
-							class="animate-spin h-4 w-4 text-white"
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-						>
-							<circle
-								class="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								stroke-width="4"
-							></circle>
-							<path
-								class="opacity-75"
-								fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-							></path>
-						</svg>
-					{:else if playing}
-						<button
-							id="pause-audio-button"
-							class="w-4 h-4 text-zinc-300"
-							on:click={handleAudioPlayPause}
-						>
-							<FaPause />
-						</button>
-					{:else}
-						<button
-							id="play-audio-button"
-							class="w-4 h-4 text-zinc-300"
-							on:click={handleSpeakMessageClick}
-						>
-							<GoPlay />
-						</button>
-					{/if}
-					<button
-						id="copy-to-clipboard-button"
-						type="button"
-						class="w-4 h-4 text-zinc-300"
-						on:click={handleCopyToKeyboardClick}
-					>
-						{#if showTick}
-							<TiTick />
-						{:else}
-							<FaRegClipboard />
-						{/if}
-					</button>
-				</div>
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle>
+					<path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					></path>
+				</svg>
+			{:else if playing}
+				<button
+					id="pause-audio-button"
+					class="w-4 h-4 text-zinc-300"
+					on:click={handleAudioPlayPause}
+				>
+					<FaPause />
+				</button>
+			{:else}
+				<button
+					id="play-audio-button"
+					class="w-4 h-4 text-zinc-300"
+					on:click={handleSpeakMessageClick}
+				>
+					<GoPlay />
+				</button>
 			{/if}
+			<button
+				id="copy-to-clipboard-button"
+				type="button"
+				class="w-4 h-4 text-zinc-300"
+				on:click={handleCopyToKeyboardClick}
+			>
+				{#if showTick}
+					<TiTick />
+				{:else}
+					<FaRegClipboard />
+				{/if}
+			</button>
 		</div>
 	</div>
+</div>
 
-	{#if isOverlayVisible}
-		<div
-			class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center z-50"
-			on:click={(event) => {
-				if (event.target === event.currentTarget) isOverlayVisible = false;
+{#if isOverlayVisible}
+	<div
+		class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center z-50"
+		on:click={(event) => {
+			if (event.target === event.currentTarget) isOverlayVisible = false;
+		}}
+	>
+		<button
+			on:click={() => {
+				isOverlayVisible = false;
 			}}
+			aria-label="Close"
 		>
-			<button
-				on:click={() => {
-					isOverlayVisible = false;
-				}}
-				aria-label="Close"
-			>
-				<div class="w-5 h-5">
-					<MdClose />
-				</div>
-			</button>
-			<img src={message.data.imageUrl} class="max-w-full max-h-full" alt="Full size image" />
-		</div>
-	{/if}
-{:else}{/if}
+			<div class="w-5 h-5">
+				<MdClose />
+			</div>
+		</button>
+		<img src={message.data.imageUrl} class="max-w-full max-h-full" alt="Full size image" />
+	</div>
+{/if}

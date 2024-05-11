@@ -7,6 +7,7 @@
 	import MdSearch from 'svelte-icons/md/MdSearch.svelte';
 	import { PaginationItem } from 'flowbite-svelte';
 	import { tick } from 'svelte';
+	import { t, plural } from 'svelte-i18n-lingui';
 
 	let messagesSearchTerm = writable('');
 	let messagesSearchResult = writable([]);
@@ -129,17 +130,17 @@
 		<div
 			class="flex justify-center items-center min-h-[calc(100vh-150px)] px-4 text-center text-sm"
 		>
-			<h2 class="text-white text-md">You must be logged in to search your messsages.</h2>
+			<h2 class="text-white text-md">{$t`You must be logged in to search your messsages.`}</h2>
 		</div>
 	{:else if $hasSearched && $totalResults === 0}
 		<div class="flex justify-center items-center min-h-[calc(100vh-150px)] px-4 text-center">
-			<h2 class="text-white text-sm">No results found.</h2>
+			<h2 class="text-white text-sm">{$t`No results found.`}</h2>
 		</div>
 	{:else if !$hasSearched}
 		<div
 			class="flex justify-center items-center min-h-[calc(100vh-150px)] px-4 text-center text-sm"
 		>
-			<h2 class="text-white text-md">Start typing to search for messages.</h2>
+			<h2 class="text-white text-md">{$t`Start typing to search for messages.`}</h2>
 		</div>
 	{/if}
 	{#if $totalResults || $loading}
@@ -147,9 +148,14 @@
 			class="bg-zinc-950 bg-opacity-50 border-b border-zinc-700 py-2 bg-zinc-0 flex items-center px-4 text-sm justify-between text-white"
 		>
 			{#if $loading}
-				<h1 class="text-sm">Searching...</h1>
+				<h1 class="text-sm">{$t`Searching...`}</h1>
 			{:else}
-				<h1 class="text-sm">{$totalResults} Results</h1>
+				<h1 class="text-sm">
+					{$plural($totalResults || 0, {
+						one: '# result',
+						other: '# results'
+					})}
+				</h1>
 			{/if}
 		</div>
 	{/if}
@@ -190,14 +196,14 @@
 					1
 						? 'opacity-50 cursor-not-allowed'
 						: ''}"
-					on:click={() => ($currentPage <= 1 ? null : previous())}>Previous</PaginationItem
+					on:click={() => ($currentPage <= 1 ? null : previous())}>{$t`Previous`}</PaginationItem
 				>
 				<PaginationItem
 					class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white  {$currentPage >=
 					$totalPages
 						? 'opacity-50 cursor-not-allowed'
 						: ''}"
-					on:click={() => ($currentPage >= $totalPages ? null : next())}>Next</PaginationItem
+					on:click={() => ($currentPage >= $totalPages ? null : next())}>{$t`Next`}</PaginationItem
 				>
 			</div>
 		</div>

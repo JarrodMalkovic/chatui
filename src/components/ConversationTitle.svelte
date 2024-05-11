@@ -4,8 +4,9 @@
 	import MdWarning from 'svelte-icons/md/MdWarning.svelte';
 	import { user } from '$lib/auth';
 	import { page } from '$app/stores';
-	import { supabase, supabaseUrl } from '$lib/supabaseClient';
+	import { supabase } from '$lib/supabaseClient';
 	import { tick } from 'svelte';
+	import { t } from 'svelte-i18n-lingui';
 
 	export let conversation: any;
 	export let conversations: any[];
@@ -102,14 +103,16 @@
 		>
 			<div class="mx-auto mb-4 text-white w-12 h-12"><MdWarning /></div>
 			<div class="text-center space-x-2 text-white">
-				<h3 class="mb-5 text-md font-normal">Are you sure you want to delete this conversation?</h3>
+				<h3 class="mb-5 text-md font-normal">
+					{$t`Are you sure you want to delete this conversation?`}
+				</h3>
 				<button
 					class="text-sm border p-2 rounded-xl border-zinc-500"
-					on:click={() => (showModal = false)}>Cancel</button
+					on:click={() => (showModal = false)}>{$t`Cancel`}</button
 				>
-				<button class="text-sm p-2 rounded-xl bg-red-600 hover:bg-red-800" on:click={confirmDelete}
-					>Delete</button
-				>
+				<button class="text-sm p-2 rounded-xl bg-red-600 hover:bg-red-800" on:click={confirmDelete}>
+					{$t`Delete`}
+				</button>
 			</div>
 		</Modal>
 	</div>
@@ -155,14 +158,14 @@
 						class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
 						on:click={() => handleRenameClick(conversation.id)}
 					>
-						Rename
+						{$t`Rename`}
 					</button>
 
 					<button
 						class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
 						on:click={() => handleDeleteClick(conversation.id)}
 					>
-						Delete
+						{$t`Delete`}
 					</button>
 				</div>
 			</Dropdown>

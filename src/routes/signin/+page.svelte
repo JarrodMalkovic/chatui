@@ -2,6 +2,7 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { t } from 'svelte-i18n-lingui';
 
 	onMount(async () => {
 		const user = await supabase.auth.getUser();
@@ -43,7 +44,7 @@
 	<div class="sm:mx-auto sm:w-full sm:max-w-md">
 		<a href="/"><img class="mx-auto h-10 w-auto" src="./assets/logo.svg" alt="Your Company" /></a>
 		<h2 class="mt-2 text-center text-2xl font-bold leading-9 tracking-tight">
-			Sign in to your account
+			{$t`Sign in to your account`}
 		</h2>
 	</div>
 
@@ -69,7 +70,7 @@
 				{/if}
 
 				<div>
-					<label for="email" class="block text-sm font-medium leading-6">Email address</label>
+					<label for="email" class="block text-sm font-medium leading-6">{$t`Email address`}</label>
 					<div class="mt-2">
 						<input
 							id="email"
@@ -82,7 +83,7 @@
 				</div>
 
 				<div>
-					<label for="password" class="block text-sm font-medium leading-6">Password</label>
+					<label for="password" class="block text-sm font-medium leading-6">{$t`Password`}</label>
 					<div class="mt-2">
 						<input
 							id="password"
@@ -100,7 +101,7 @@
 						type="submit"
 						class="flex w-full justify-center rounded-md bg-pink-600 px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm hover:bg-pink-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
 					>
-						Sign in
+						{$t`Sign in`}
 					</button>
 				</div>
 
@@ -110,7 +111,7 @@
 							<div class="w-full border-t border-zinc-700"></div>
 						</div>
 						<div class="relative flex justify-center text-sm font-medium leading-6">
-							<span class="sm:bg-zinc-800 bg-zinc-900 px-6">Or continue with</span>
+							<span class="sm:bg-zinc-800 bg-zinc-900 px-6">{$t`Or continue with`}</span>
 						</div>
 					</div>
 
@@ -164,8 +165,8 @@
 		</div>
 
 		<p class="sm:mt-10 text-center text-sm text-zinc-300">
-			Don't have an account?
-			<a href="/signup" class="font-semibold text-pink-600 hover:text-pink-500">Sign up</a>
+			{$t`Don't have an account?`}
+			<a href="/signup" class="font-semibold text-pink-600 hover:text-pink-500">{$t`Sign up`}</a>
 		</p>
 	</div>
 </div>

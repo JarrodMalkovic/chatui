@@ -20,6 +20,7 @@
 	import ConversationTitle from '../../components/ConversationTitle.svelte';
 	import { Drawer } from 'flowbite-svelte';
 	import { toasts, ToastContainer, BootstrapToast } from 'svelte-toasts';
+	import { t } from 'svelte-i18n-lingui';
 
 	let logoutDropdownOpen = false;
 	let isSidebarVisible = null;
@@ -463,19 +464,19 @@
 		<div class="text-center space-x-2 text-white space-y-3">
 			<h3 class="text-md font-bold">Start a new chat?</h3>
 			<p class="text-sm">
-				Your current chat will no longer be accessible. <a class="underline" href="/signup"
-					>Sign up</a
-				>
-				or
-				<a class="underline" href="/signin">log in</a> to save chats.
+				{$t`Your current chat will no longer be accessible.`}
+				<a class="underline" href="/signup">{$t`Sign up`}</a>
+				{$t`or`}
+				<a class="underline" href="/signin">{$t`log in`}</a>
+				{$t`to save chats.`}
 			</p>
 			<button
 				class="text-sm border-2 p-2 rounded-lg bg-zinc-700 hover:bg-zinc-800 border-zinc-600 font-bold"
-				on:click={() => (confirmNewChatModal = false)}>Cancel</button
+				on:click={() => (confirmNewChatModal = false)}>{$t`Cancel`}</button
 			>
 			<button
 				class="text-sm p-2 rounded-lg border-2 border-pink-600 hover:border-pink-800 bg-pink-600 hover:bg-pink-800 font-bold"
-				on:click={confirmNewChat}>New chat</button
+				on:click={confirmNewChat}>{$t`New chat`}</button
 			>
 		</div>
 	</Modal>
@@ -566,7 +567,7 @@
 								<button
 									on:click={logOut}
 									class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
-									>Logout
+									>{$t`Logout`}
 								</button>
 							</div>
 						</Dropdown>
@@ -574,23 +575,23 @@
 				{:else}
 					<div class="px-4">
 						<div class="space-y-2">
-							<h1 class="font-bold text-sm">Sign up or log in</h1>
+							<h1 class="font-bold text-sm">{$t`Sign up or log in`}</h1>
 							<p class="text-zinc-400 text-sm">
-								Save your chat history, share chats, and personalize your experience.
+								{$t`Save your chat history, share chats, and personalize your experience.`}
 							</p>
 						</div>
 						<div class="mt-4 space-y-2">
 							<a href="/signup" class="block">
 								<button
 									class="w-full p-2 bg-pink-600 hover:bg-pink-700 rounded-lg font-bold text-sm"
-									>Sign up</button
+									>{$t`Sign up`}</button
 								>
 							</a>
 							<a href="/signin" class="block">
 								<button
 									class="w-full p-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800 border-2 border-solid rounded-lg font-bold text-sm"
 								>
-									Log in
+									{$t`Log in`}
 								</button>
 							</a>
 						</div>
@@ -628,7 +629,7 @@
 					<div class="w-4 h-4 mr-2">
 						<MdCreate />
 					</div>
-					New chat
+					{$t`New chat`}
 				</a>
 			</div>
 			<div
@@ -675,7 +676,8 @@
 							<button
 								on:click={logOut}
 								class="w-full text-left p-2 hover:bg-zinc-700 rounded-lg text-sm"
-								>Logout
+							>
+								{$t`Logout`}
 							</button>
 						</div>
 					</Dropdown>
@@ -683,22 +685,22 @@
 			{:else}
 				<div class="px-4">
 					<div class="space-y-2">
-						<h1 class="font-bold text-sm">Sign up or log in</h1>
+						<h1 class="font-bold text-sm">{$t`Sign up or log in`}</h1>
 						<p class="text-zinc-400 text-sm">
-							Save your chat history, share chats, and personalize your experience.
+							{$t`Save your chat history, share chats, and personalize your experience.`}
 						</p>
 					</div>
 					<div class="mt-4 space-y-2">
 						<a href="/signup" class="block">
-							<button class="w-full p-2 bg-pink-600 hover:bg-pink-700 rounded-lg font-bold text-sm"
-								>Sign up</button
-							>
+							<button class="w-full p-2 bg-pink-600 hover:bg-pink-700 rounded-lg font-bold text-sm">
+								{$t`Sign up`}
+							</button>
 						</a>
 						<a href="/signin" class="block">
 							<button
 								class="w-full p-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800 border-2 border-solid rounded-lg font-bold text-sm"
 							>
-								Log in
+								{$t`Log in`}
 							</button>
 						</a>
 					</div>
@@ -738,7 +740,7 @@
 					{currentConversation
 						? currentConversation.title
 							? currentConversation.title
-							: 'New Chat'
+							: $t`New Chat`
 						: ''}
 				</div>
 			</div>
@@ -755,7 +757,7 @@
 						<div class="h-full flex justify-center items-center">
 							<div>
 								<img class="mx-auto mt-28 h-10 w-auto" src="./assets/logo.svg" alt="Your Company" />
-								<h1 class="text-white text-xl font-bold mt-2">How can I help you today?</h1>
+								<h1 class="text-white text-xl font-bold mt-2">{$t`How can I help you today?`}</h1>
 							</div>
 						</div>
 						<div class="h-auto px-2">
@@ -768,10 +770,10 @@
 									class="p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-x-hidden text-ellipsis"
 								>
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										Write a thank-you note
+										{$t`Write a thank-you note`}
 									</h2>
 									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										to our babysitter for the last-minute help
+										{$t`to our babysitter for the last-minute help`}
 									</h3>
 								</button>
 
@@ -780,10 +782,10 @@
 									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
 								>
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										Create a charter
+										{$t`Create a charter`}
 									</h2>
 									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										to start a film club
+										{$t`to start a film club`}
 									</h3>
 								</button>
 								<button
@@ -794,10 +796,10 @@
 									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left overflow-ellipsis"
 								>
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										Brainstorm edge cases
+										{$t`Brainstorm edge cases`}
 									</h2>
 									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										for a function with birthday as input, horoscope as output
+										{$t`for a function with birthday as input, horoscope as output`}
 									</h3>
 								</button>
 								<button
@@ -808,10 +810,10 @@
 									class="md:block hidden p-3 border border-zinc-800 rounded-lg hover:bg-zinc-700 text-left"
 								>
 									<h2 class="font-bold text-white text-sm overflow-ellipsis truncate">
-										Plan a trip
+										{$t`Plan a trip`}
 									</h2>
 									<h3 class="text-sm overflow-ellipsis truncate text-zinc-400">
-										to explore the Madagascar wildlife on a budget
+										{$t`to explore the Madagascar wildlife on a budget`}
 									</h3>
 								</button>
 							</div>
@@ -823,7 +825,7 @@
 							{#if message.role === 'user'}
 								<Message
 									{message}
-									name={'You'}
+									name={$t`You`}
 									isLastMessage={index === $messages.length - 1}
 									profilePicture={$user
 										? $user.profilePicture
@@ -832,7 +834,7 @@
 							{:else if message.role === 'assistant'}
 								<Message
 									{message}
-									name={'AI'}
+									name={$t`AI`}
 									isLastMessage={index === $messages.length - 1}
 									profilePicture={'./assets/ai-profile-picture.webp'}
 								/>
@@ -886,7 +888,7 @@
 							</div>
 						</form>
 						<p class="text-xs text-zinc-400 px-6 pb-4 text-center">
-							This is an unofficial open source UI for the OpenAI API.
+							{$t`This is an unofficial open source UI for the OpenAI API.`}
 						</p>
 					</div>
 				</div>
