@@ -51,9 +51,11 @@ const handleInitialLanguage: Handle = async ({ event, resolve }) => {
 		{ defaultLocale: 'en' }
 	)[0];
 
-	event.params['preferredLocale'] = preferredLocale;
+	const response = await resolve(event, {
+		transformPageChunk: ({ html }) => html.replace('%lang%', preferredLocale)
+	});
 
-	return resolve(event);
+	return response;
 };
 
 export const handle = sequence(handleAuth, handleCORS, handleInitialLanguage);
