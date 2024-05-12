@@ -493,20 +493,22 @@
 </div>
 
 <div class="flex bg-zinc-900 relative">
-	<button
-		class="md:flex hidden absolute top-1/2 {isSidebarVisible
-			? 'left-72'
-			: 'left-0'} z-30 p-1 m-1 bg-zinc-900 rounded-full text-white hover:bg-zinc-800"
-		on:click={toggleSidebar}
-	>
-		<div class="h-6 w-6">
-			{#if isSidebarVisible}
-				<MdChevronLeft />
-			{:else}
-				<MdChevronRight />
-			{/if}
-		</div>
-	</button>
+	<div class="md:flex hidden items-center">
+		<button
+			class="absolute {isSidebarVisible
+				? 'left-72'
+				: 'left-0'} z-30 p-1 m-1 bg-zinc-900 rounded-full text-white hover:bg-zinc-800 mb-[57px]"
+			on:click={toggleSidebar}
+		>
+			<div class="h-6 w-6">
+				{#if isSidebarVisible}
+					<MdChevronLeft />
+				{:else}
+					<MdChevronRight />
+				{/if}
+			</div>
+		</button>
+	</div>
 
 	<div
 		class="transition-transform duration-300 transform bg-zinc-950 md:flex hidden {isSidebarVisible ==
@@ -778,7 +780,7 @@
 				{#if !$messages.length && !isGenerating}
 					<div class="flex flex-col h-full justify-between">
 						<div class="h-full flex justify-center items-center">
-							<div class="flex flex-col items-center mt-24 space-y-4">
+							<div class="flex flex-col items-center mt-36 space-y-4">
 								<img
 									class="h-16 w-16 rounded-full border-2 border-zinc-700"
 									src="./assets/ai-profile-picture.webp"
