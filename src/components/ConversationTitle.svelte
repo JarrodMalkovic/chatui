@@ -7,6 +7,11 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { tick } from 'svelte';
 	import { t } from 'svelte-i18n-lingui';
+	import { browser } from '$app/environment';
+	import { createEventDispatcher } from 'svelte';
+	import { goto } from '$app/navigation';
+
+	const dispatch = createEventDispatcher();
 
 	export let conversation: any;
 	export let conversations: any[];
@@ -48,6 +53,13 @@
 
 		conversationToRename = null;
 		dropdownOpen = false;
+	}
+
+	function handleConversationClick() {
+		goto(`/${conversation.id}`);
+		if (browser && window.innerWidth < 768) {
+			dispatch('toggleSidebar');
+		}
 	}
 
 	function handleDeleteClick(conversationId) {
@@ -132,9 +144,12 @@
 			? 'bg-zinc-900'
 			: ''}"
 	>
-		<a class="text-white pl-2 py-2 text-left truncate w-full h-full" href="/{conversation.id}"
-			>{conversation.title ?? 'New chat'}</a
+		<button
+			class="text-white pl-2 py-2 text-left truncate w-full h-full"
+			on:click={handleConversationClick}
 		>
+			{conversation.title ?? 'New chat'}
+		</button>
 		<div class="relative">
 			<button
 				id={`conversationButton-${conversation.id}`}

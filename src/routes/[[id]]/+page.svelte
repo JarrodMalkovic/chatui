@@ -127,6 +127,10 @@
 	let confirmNewChatModal = false;
 	async function handleNewChat() {
 		if ($user) {
+			if (window.innerWidth < 768) {
+				toggleSidebar();
+			}
+
 			await goto('/');
 		} else if ($messages.length > 0) {
 			confirmNewChatModal = true;
@@ -441,10 +445,6 @@
 			}
 		}
 
-		if (browser && window.innerWidth < 768) {
-			toggleSidebar();
-		}
-
 		previousId = $page.params.id;
 	}
 	$: $page.params.id, $page.params.id == null ? setMessages([]) : fetchMessages($page.params.id);
@@ -615,7 +615,7 @@
 		bgColor="bg-zinc-950 md:hidden flex"
 		bgOpacity="bg-opacity-45"
 		divClass="z-50  md:hidden flex"
-		class="bg-zinc-900 border-l border-zinc-700 m-0 md:hidden flex"
+		class="bg-zinc-900 border-zinc-700 m-0 md:hidden flex"
 		placement="left"
 		transitionType="fly"
 		transitionParams={{
@@ -652,6 +652,7 @@
 							<h1 class="text-xs p-2 py-2 font-bold text-zinc-400">{period}</h1>
 							{#each convos as conversation}
 								<ConversationTitle
+									on:toggleSidebar={toggleSidebar}
 									isActive={conversation.id === $page.params.id}
 									{conversation}
 									{conversations}

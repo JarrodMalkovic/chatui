@@ -153,7 +153,7 @@
 	{/if}
 	{#if $totalResults || $loading}
 		<div
-			class="bg-zinc-950 bg-opacity-50 border-b border-zinc-700 py-2 bg-zinc-0 flex items-center px-4 text-sm justify-between text-white"
+			class="bg-zinc-950 bg-opacity-50 border-zinc-700 py-2 bg-zinc-0 flex items-center px-4 text-sm justify-between text-white"
 		>
 			{#if $loading}
 				<h1 class="text-sm">{$t`Searching...`}</h1>
@@ -201,7 +201,7 @@
 		{/if}
 	</div>
 	{#if $totalResults && !$loading}
-		<div class="sticky bottom-0 bg-zinc-950 bg-opacity-50 border-t border-zinc-700 px-4 py-3">
+		<div class="sticky bottom-0 bg-zinc-950 bg-opacity-50 border-zinc-700 px-4 py-3">
 			<div class="flex justify-center space-x-3 rtl:space-x-reverse">
 				<PaginationItem
 					class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white  {$currentPage <=
