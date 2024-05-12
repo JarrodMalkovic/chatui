@@ -784,7 +784,7 @@
 									src="./assets/ai-profile-picture.webp"
 								/>
 								<h1 class="text-white text-center text-xl font-bold">
-									{$t`Ask me anything`}
+									{$t`What can I assist you with today?`}
 								</h1>
 							</div>
 						</div>
