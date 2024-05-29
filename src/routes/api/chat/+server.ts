@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { OpenAIStream, StreamingTextResponse } from 'ai';
 import {
 	OPENAI_API_KEY,
+	TOGETHERAI_API_KEY,
 	UPSTASH_REDIS_REST_TOKEN,
 	UPSTASH_REDIS_REST_URL
 } from '$env/static/private';
@@ -10,6 +11,10 @@ import { Redis } from '@upstash/redis';
 
 const openAiClient = new OpenAI({
 	apiKey: OPENAI_API_KEY
+});
+const togetherAiClient = new OpenAI({
+	apiKey: TOGETHERAI_API_KEY,
+	baseURL: 'https://api.together.xyz/v1'
 });
 
 export const config = {
@@ -50,10 +55,11 @@ export async function POST({ request, getClientAddress }) {
 		});
 	}
 
-	const { messages } = await request.json();
-
-	const stream = await openAiClient.chat.completions.create({
-		model: 'gpt-4-1106-preview',
+	const { messages, selectedModelName } = await request.json();
+	console.log({ selectedModelName });
+	const client = selectedModelName?.includes('gpt') ? openAiClient : togetherAiClient;
+	const stream = await client.chat.completions.create({
+		model: selectedModelName,
 		messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
 		max_tokens: 500,
 		stream: true

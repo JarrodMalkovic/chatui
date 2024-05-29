@@ -21,8 +21,11 @@
 	import { Drawer } from 'flowbite-svelte';
 	import { toasts, ToastContainer, BootstrapToast } from 'svelte-toasts';
 	import { t } from 'svelte-i18n-lingui';
-	import { browser } from '$app/environment';
+	import GoChevronDown from 'svelte-icons/go/GoChevronDown.svelte';
 
+	let searchTerm = writable('');
+	let dropdownOpen = false;
+	let selectedModel = writable(null);
 	let logoutDropdownOpen = false;
 	let isSidebarVisible = null;
 	let isSidebarHidden = true;
@@ -34,6 +37,27 @@
 	let hasFetchedAllConversations = writable(false);
 	let mobileSidebarContainer = null;
 	let desktopSidebarContainer = null;
+
+	const slides = [
+		{
+			image: './assets/babysitter-letter-suggestion.webp',
+			category: 'Help',
+			title: 'Write a thank-you note to our babysitter',
+			action: 'Write a thank-you note to our babysitter'
+		},
+		{
+			image: './assets/mock-interview-suggestion.webp',
+			category: 'Learn',
+			title: 'Simulate a mock interview',
+			action: 'Simulate a mock interview'
+		},
+		{
+			image: './assets/explore-madagascar-suggestion.webp',
+			category: 'Fun',
+			title: 'Plan a trip to explore Madagascar',
+			action: 'Plan a trip to explore Madagascar'
+		}
+	];
 
 	function toggleSidebar() {
 		setTimeout(() => {
@@ -132,7 +156,20 @@
 			}
 
 			await goto('/');
+			await tick();
+			const defaultModel = $unfilteredOrganisations
+				.flatMap((organisations) => organisations.models)
+				.filter((model) => model.is_default);
+			if (defaultModel[0]) {
+				selectedModel.set(defaultModel[0]);
+			}
 		} else if ($messages.length > 0) {
+			const defaultModel = $unfilteredOrganisations
+				.flatMap((organisations) => organisations.models)
+				.filter((model) => model.is_default);
+			if (defaultModel[0]) {
+				selectedModel.set(defaultModel[0]);
+			}
 			confirmNewChatModal = true;
 		}
 	}
@@ -161,11 +198,21 @@
 		let message = $input;
 		isGenerating = true;
 
-		append({
-			content: message,
-			role: 'user'
-		});
+		append(
+			{
+				content: message,
+				role: 'user'
+			},
+			{
+				options: {
+					body: {
+						selectedModelName: $selectedModel.internal_name
+					}
+				}
+			}
+		);
 		input.set('');
+
 		autoGrow();
 		if (conversationId == null && $user) {
 			conversationId = await createConversation();
@@ -234,13 +281,16 @@
 
 		const { data, error } = await supabase
 			.from('conversations')
-			.insert({ user_id: $user.id })
+			.insert({ user_id: $user.id, selected_model_id: $selectedModel.id })
 			.select('*');
 
 		if (data && data.length > 0) {
-			const conversation = data[0];
+			const conversation = {
+				...data[0],
+				models: $selectedModel
+			};
 			conversations.update((currentConversations) => {
-				return [data[0], ...currentConversations];
+				return [conversation, ...currentConversations];
 			});
 			goto(`/${conversation.id}`);
 
@@ -394,6 +444,7 @@
 		updateSidebarVisibility();
 		window.addEventListener('resize', updateSidebarVisibility);
 		container.addEventListener('scroll', handleScroll);
+		fetchModelsByOrganisation();
 		autoGrow();
 		setTimeout(() => {
 			if (mobileSidebarContainer) {
@@ -436,6 +487,62 @@
 		};
 	}
 
+	function onModelSelect(model) {
+		dropdownOpen = false;
+		selectedModel.set(model);
+		if ($page.params.id) {
+			updateModelSelection($page.params.id, model);
+		}
+	}
+	async function updateModelSelection(conversationId, model) {
+		const { error } = await supabase
+			.from('conversations')
+			.update({ selected_model_id: model.id })
+			.eq('id', conversationId);
+		conversations.set(
+			$conversations.map((conversation) =>
+				conversation.id === conversationId
+					? { ...conversation, models: { ...model } }
+					: conversation
+			)
+		);
+		if (error) {
+			console.error('Error updating selected model:', error);
+		}
+	}
+	let unfilteredOrganisations = writable([]);
+	let filteredOrganisations = derived(
+		[unfilteredOrganisations, searchTerm],
+		([$unfilteredOrganisations, $searchTerm]) =>
+			$unfilteredOrganisations.map((org) => ({
+				...org,
+				models: org.models.filter((model) =>
+					model.name.toLowerCase().includes($searchTerm.toLowerCase())
+				)
+			}))
+	);
+	async function fetchModelsByOrganisation() {
+		const { data, error } = await supabase
+			.from('organisations')
+			.select(
+				`
+            name,
+            models (
+				id,
+                name,
+				internal_name,
+				is_default
+            )
+        `
+			)
+			.order('name', { foreignTable: 'models' });
+		if (error) {
+			console.error('error fetching data', error);
+			return [];
+		}
+		return unfilteredOrganisations.set(data);
+	}
+
 	$: if ($page.params.id !== previousId) {
 		if (previousId != null) {
 			if (isGenerating) {
@@ -451,6 +558,29 @@
 	$: $page.params.id, (currentConversation = $conversations.find((c) => c.id === $page.params.id));
 	$: $user, fetchMoreConversations();
 	$: $messages, scrollToBottom();
+	$: if ($conversations && $unfilteredOrganisations) {
+		if ($page.params.id) {
+			const currentConversation = $conversations.find((c) => c.id === $page.params.id);
+			if (currentConversation && currentConversation.models) {
+				selectedModel.set(currentConversation.models);
+			} else {
+				const defaultModel = $unfilteredOrganisations
+					.flatMap((organisations) => organisations.models)
+					.filter((model) => model.is_default);
+				if (defaultModel[0]) {
+					selectedModel.set(defaultModel[0]);
+				}
+			}
+		} else if (!$selectedModel) {
+			const defaultModel = $unfilteredOrganisations
+				.flatMap((organisations) => organisations.models)
+				.filter((model) => model.is_default);
+			if (defaultModel[0]) {
+				selectedModel.set(defaultModel[0]);
+			}
+		}
+		console.log('yo', $selectedModel, $page.params.id, $unfilteredOrganisations);
+	}
 </script>
 
 <ToastContainer {toasts} let:data>
@@ -746,17 +876,56 @@
 				</button>
 			</div>
 
-			<div class="flex-1 flex justify-center w-full">
-				<div
-					class="text-white text-sm max-w-3xl font-bold min-h-full text-center items-center flex mx-4"
-				>
-					{currentConversation
-						? currentConversation.title
-							? currentConversation.title
-							: $t`New Chat`
-						: ''}
+			{#if $selectedModel}
+				<div class="w-full">
+					<div class="flex-1 flex md:justify-start justify-center w-full p-2 mt-2">
+						<button
+							data-dropdown-placement="right"
+							class="text-white text-md max-w-3xl font-bold min-h-full text-center items-center flex mx-4"
+						>
+							{$selectedModel?.name}
+							<div class="w-4 h-4 ml-1 mt-1 text-zinc-400"><GoChevronDown /></div></button
+						>
+						<Dropdown
+							bind:open={dropdownOpen}
+							on:show={() => searchTerm.set('')}
+							placement="bottom"
+							class="z-[9999] max-h-96 w-64 overflow-scroll space-y-3"
+							containerClass="bg-zinc-800 rounded-xl text-white border border-zinc-700  mt-2.5"
+						>
+							<div class="p-3 border-b border-zinc-700">
+								<input
+									on:input={(e) => searchTerm.set(e.target.value)}
+									placeholder="Search for a model..."
+									class="w-full rounded-lg bg-zinc-700 border-zinc-600 text-white text-sm focus:outline-0 focus-visible:ring-0 focus:border-zinc-500"
+								/>
+							</div>
+							{#each $filteredOrganisations as organisation}
+								{#if organisation.models.length >= 1}
+									<div class="space-y-1">
+										<h2 class="font-bold text-sm text-zinc-400 px-4">{organisation.name}</h2>
+										<div class="px-2">
+											{#each organisation.models as model}
+												<button
+													on:click={() => onModelSelect(model)}
+													class="text-sm px-2 hover:bg-zinc-700 w-full text-left py-1 rounded-lg w-full {model.id ===
+													$selectedModel?.id
+														? 'bg-zinc-700'
+														: ''}">{model.name}</button
+												>
+											{/each}
+										</div>
+									</div>
+								{/if}
+							{/each}
+
+							{#if $filteredOrganisations.reduce((total, org) => total + org.models.length, 0) === 0}
+								<div class="px-4 pb-2 text-sm text-zinc-200">No models found.</div>
+							{/if}
+						</Dropdown>
+					</div>
 				</div>
-			</div>
+			{/if}
 
 			{#if isSidebarVisible == false}
 				<div class="absolute left-2 top-2 hidden sm:block">

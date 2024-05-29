@@ -67,10 +67,11 @@
 		"svelte-i18n-lingui": "^0.1.7",
 		"svelte-icons": "^2.1.0",
 		"svelte-toasts": "^1.1.2",
+		"swiper": "^11.1.3",
 		"tailwind-merge": "^2.3.0",
 		"zod": "^3.22.4"
 	},
 	"browser": {
-    	"crypto": false
+		"crypto": false
 	}
 }
